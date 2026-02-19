@@ -1,4 +1,4 @@
-# 🧠 InsightAI — AI-Powered Business Intelligence Platform
+# InsightAI — AI-Powered Business Intelligence Platform
 
 A conversational BI dashboard where you upload CSV data, ask questions in natural language, and get SQL queries, charts, statistics, and predictions — powered by **Groq (Llama 3)**.
 
@@ -9,7 +9,7 @@ User → React (Vite) → Express.js → Python FastAPI → Groq API
                                   → SQLite → Pandas → Plotly → Scikit-learn
 ```
 
-## 📁 Project Structure
+## Repository structure
 
 ```
 Project Design/
@@ -44,7 +44,7 @@ Project Design/
 └── README.md
 ```
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 - **Node.js** 18+
@@ -86,7 +86,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-## 💬 Example Questions
+## Example Questions
 
 Upload `sample_data/sales_data.csv`, then try:
 
@@ -128,7 +128,7 @@ curl -X POST http://localhost:5000/api/ask \
   -d '{"question": "Show total sales per region"}'
 ```
 
-## 🔐 Security
+## Security
 
 - SQL queries are validated (SELECT-only)
 - DROP, DELETE, UPDATE, INSERT are blocked
