@@ -1,0 +1,117 @@
+"""
+Statistical analysis and auto-insights generation service.
+"""
+import pandas as pd
+import numpy as np
+
+
+def compute_stats(df: pd.DataFrame) -> dict:
+    """
+    Compute basic statistics for all numeric columns in the DataFrame.
+
+    Returns:
+        Dictionary of {column_name: {mean, median, std, min, max, count}}
+    """
+    numeric_df = df.select_dtypes(include='number')
+
+    if numeric_df.empty:
+        return {}
+
+    stats = {}
+    for col in numeric_df.columns:
+        series = numeric_df[col].dropna()
+        if len(series) == 0:
+            continue
+        stats[col] = {
+            "mean": round(float(series.mean()), 2),
+            "median": round(float(series.median()), 2),
+            "std": round(float(series.std()), 2) if len(series) > 1 else 0,
+            "min": round(float(series.min()), 2),
+            "max": round(float(series.max()), 2),
+            "count": int(len(series)),
+        }
+
+    return stats
+
+
+def detect_trends(df: pd.DataFrame) -> list[str]:
+    """
+    Detect basic trends in numeric columns.
+
+    Returns:
+        List of trend description strings
+    """
+    trends = []
+    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+
+    for col in numeric_cols:
+        series = df[col].dropna()
+        if len(series) < 3:
+            continue
+
+        # Simple trend: compare first half avg to second half avg
+        mid = len(series) // 2
+        first_half = series.iloc[:mid].mean()
+        second_half = series.iloc[mid:].mean()
+
+        if second_half > first_half * 1.1:
+            trends.append(f"{col} shows an upward trend (increased by {((second_half/first_half - 1)*100):.1f}%).")
+        elif second_half < first_half * 0.9:
+            trends.append(f"{col} shows a downward trend (decreased by {((1 - second_half/first_half)*100):.1f}%).")
+        else:
+            trends.append(f"{col} remains relatively stable.")
+
+    return trends
+
+
+def generate_insights(df: pd.DataFrame, stats: dict) -> list[str]:
+    """
+    Generate auto-insight statements from the data and statistics.
+
+    Returns:
+        List of insight strings
+    """
+    insights = []
+
+    if df.empty:
+        return insights
+
+    cols = list(df.columns)
+    numeric_cols = df.select_dtypes(include='number').columns.tolist()
+    non_numeric_cols = [c for c in cols if c not in numeric_cols]
+
+    # Insight 1: Identify top contributor (categorical + numeric)
+    if non_numeric_cols and numeric_cols:
+        cat_col = non_numeric_cols[0]
+        num_col = numeric_cols[0]
+
+        try:
+            grouped = df.groupby(cat_col)[num_col].sum().sort_values(ascending=False)
+            if len(grouped) > 1:
+                top = grouped.index[0]
+                top_val = grouped.iloc[0]
+                total = grouped.sum()
+                pct = (top_val / total * 100) if total > 0 else 0
+                insights.append(
+                    f"{cat_col.replace('_', ' ').title()} '{top}' contributes the highest {num_col.replace('_', ' ')} ({pct:.1f}% of total)."
+                )
+        except Exception:
+            pass
+
+    # Insight 2: Min and max from stats
+    for col, col_stats in stats.items():
+        if 'min' in col_stats and 'max' in col_stats:
+            range_val = col_stats['max'] - col_stats['min']
+            insights.append(
+                f"{col.replace('_', ' ').title()} ranges from {col_stats['min']:,.2f} to {col_stats['max']:,.2f} (range: {range_val:,.2f})."
+            )
+            break  # Just one range insight
+
+    # Insight 3: Add trend insights
+    trends = detect_trends(df)
+    insights.extend(trends[:2])  # Limit to 2 trend insights
+
+    # Insight 4: Row count insight
+    insights.append(f"Analysis based on {len(df)} data points across {len(cols)} columns.")
+
+    return insights

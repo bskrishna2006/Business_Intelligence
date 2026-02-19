@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pandas
+plotly
+scikit-learn
+groq
+python-multipart
+kaleido
+python-dotenv
