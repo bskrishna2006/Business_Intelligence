@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 
-export default function FileUpload({ onUploadSuccess, isUploading, setIsUploading }) {
+export default function FileUpload({ onUploadSuccess, isUploading, setIsUploading, authFetch }) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
   const inputRef = useRef(null);
+  const doFetch = authFetch || fetch;
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export default function FileUpload({ onUploadSuccess, isUploading, setIsUploadin
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res = await doFetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       onUploadSuccess(data);
@@ -51,11 +52,10 @@ export default function FileUpload({ onUploadSuccess, isUploading, setIsUploadin
   return (
     <div className="p-3">
       <div
-        className={`relative rounded-lg p-4 text-center cursor-pointer border border-dashed transition-all duration-200 ${
-          dragActive
+        className={`relative rounded-lg p-4 text-center cursor-pointer border border-dashed transition-all duration-200 ${dragActive
             ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
             : 'border-[var(--color-border-hover)] bg-[var(--color-bg-primary)] hover:border-[var(--color-text-muted)]'
-        }`}
+          }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
@@ -63,7 +63,7 @@ export default function FileUpload({ onUploadSuccess, isUploading, setIsUploadin
         onClick={() => inputRef.current?.click()}
       >
         <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleChange} />
-        
+
         {isUploading ? (
           <div className="flex flex-col items-center gap-2">
             <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />

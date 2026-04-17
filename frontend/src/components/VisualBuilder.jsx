@@ -19,7 +19,7 @@ export default function VisualBuilder({ columns, tableData }) {
   const [chartType, setChartType] = useState('bar');
   const [xCol, setXCol] = useState('');
   const [yCols, setYCols] = useState([]);
-  const [draggedCol, setDraggedCol] = useState(null);
+  const [dragging, setDragging] = useState(false);
 
   // Determine numeric vs non-numeric columns from actual data
   const { numericCols, categoricalCols } = useMemo(() => {
@@ -54,22 +54,28 @@ export default function VisualBuilder({ columns, tableData }) {
     return Object.values(grouped).slice(0, 50); // Limit for readability
   }, [tableData, xCol, yCols]);
 
-  const handleDragStart = (col) => setDraggedCol(col);
+  const handleDragStart = (e, col) => {
+    e.dataTransfer.setData('text/plain', col);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragging(true);
+  };
+
+  const handleDragEnd = () => setDragging(false);
 
   const handleDropX = (e) => {
     e.preventDefault();
-    if (draggedCol) {
-      setXCol(draggedCol);
-      setDraggedCol(null);
-    }
+    const col = e.dataTransfer.getData('text/plain');
+    if (col) setXCol(col);
+    setDragging(false);
   };
 
   const handleDropY = (e) => {
     e.preventDefault();
-    if (draggedCol && !yCols.includes(draggedCol) && draggedCol !== xCol) {
-      setYCols(prev => [...prev, draggedCol]);
-      setDraggedCol(null);
+    const col = e.dataTransfer.getData('text/plain');
+    if (col && !yCols.includes(col) && col !== xCol) {
+      setYCols(prev => [...prev, col]);
     }
+    setDragging(false);
   };
 
   const removeYCol = (col) => setYCols(prev => prev.filter(c => c !== col));
@@ -104,8 +110,9 @@ export default function VisualBuilder({ columns, tableData }) {
                 <div
                   key={col}
                   draggable
-                  onDragStart={() => handleDragStart(col)}
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] font-mono cursor-grab active:cursor-grabbing hover:bg-[var(--color-bg-elevated)] transition-colors border border-transparent hover:border-[var(--color-border-hover)]"
+                  onDragStart={(e) => handleDragStart(e, col)}
+                  onDragEnd={handleDragEnd}
+                  className="text-xs px-2.5 py-1.5 rounded-md bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] font-mono cursor-grab active:cursor-grabbing hover:bg-[var(--color-bg-elevated)] transition-colors border border-transparent hover:border-[var(--color-border-hover)] select-none"
                 >
                   {col}
                 </div>
@@ -122,8 +129,9 @@ export default function VisualBuilder({ columns, tableData }) {
                 <div
                   key={col}
                   draggable
-                  onDragStart={() => handleDragStart(col)}
-                  className="text-xs px-2.5 py-1.5 rounded-md bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-mono cursor-grab active:cursor-grabbing hover:bg-[rgba(59,130,246,0.2)] transition-colors border border-transparent hover:border-[var(--color-accent)]"
+                  onDragStart={(e) => handleDragStart(e, col)}
+                  onDragEnd={handleDragEnd}
+                  className="text-xs px-2.5 py-1.5 rounded-md bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-mono cursor-grab active:cursor-grabbing hover:bg-[rgba(59,130,246,0.2)] transition-colors border border-transparent hover:border-[var(--color-accent)] select-none"
                 >
                   # {col}
                 </div>
@@ -143,11 +151,10 @@ export default function VisualBuilder({ columns, tableData }) {
               <button
                 key={ct.id}
                 onClick={() => setChartType(ct.id)}
-                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
-                  chartType === ct.id
+                className={`px-2.5 py-1 rounded-md text-xs transition-colors ${chartType === ct.id
                     ? 'bg-[var(--color-accent)] text-white'
                     : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]'
-                }`}
+                  }`}
                 title={ct.label}
               >
                 {ct.icon} {ct.label}
@@ -159,11 +166,10 @@ export default function VisualBuilder({ columns, tableData }) {
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropX}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed text-xs min-w-[120px] transition-colors ${
-              xCol
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed text-xs min-w-[120px] transition-colors ${xCol
                 ? 'border-[var(--color-success)] bg-[rgba(34,197,94,0.08)]'
                 : 'border-[var(--color-border-hover)] bg-[var(--color-bg-card)]'
-            }`}
+              }`}
           >
             <span className="text-[var(--color-text-muted)] text-[10px] font-medium">X:</span>
             {xCol ? (
@@ -177,11 +183,10 @@ export default function VisualBuilder({ columns, tableData }) {
           <div
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropY}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed text-xs min-w-[120px] transition-colors ${
-              yCols.length > 0
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-dashed text-xs min-w-[120px] transition-colors ${yCols.length > 0
                 ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
                 : 'border-[var(--color-border-hover)] bg-[var(--color-bg-card)]'
-            }`}
+              }`}
           >
             <span className="text-[var(--color-text-muted)] text-[10px] font-medium">Y:</span>
             {yCols.length > 0 ? (
