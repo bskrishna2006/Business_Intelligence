@@ -1,4 +1,4 @@
-# 🧠 InsightAI — AI-Powered Business Intelligence Platform
+# InsightAI — AI-Powered Business Intelligence Platform
 
 A conversational BI dashboard where you upload CSV data, ask questions in natural language, and get SQL queries, charts, statistics, and predictions — powered by **Groq (Llama 3)**.
 
@@ -9,7 +9,7 @@ User → React (Vite) → Express.js → Python FastAPI → Groq API
                                   → SQLite → Pandas → Plotly → Scikit-learn
 ```
 
-## 📁 Project Structure
+## Repository structure
 
 ```
 Project Design/
@@ -44,7 +44,7 @@ Project Design/
 └── README.md
 ```
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 - **Node.js** 18+
@@ -86,109 +86,7 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-## � Repository Index
-
-### Frontend (`frontend/`)
-| File | Purpose |
-|------|---------|
-| `index.html` | Entry point, mounts React app |
-| `src/main.jsx` | React app initialization |
-| `src/App.jsx` | Main app shell, routing, auth state |
-| `src/index.css` | Global styles |
-| `eslint.config.js` | Linting rules |
-| `vite.config.js` | Build tool config |
-| `package.json` | Dependencies: React, Vite, TailwindCSS, Axios, Recharts |
-
-#### Components (`frontend/src/components/`)
-| Component | Purpose |
-|-----------|---------|
-| `LandingPage.jsx` | Welcome screen before login |
-| `AuthPage.jsx` | Login/signup form |
-| `DashboardPage.jsx` | Main dashboard layout (layout + orchestrator) |
-| `Sidebar.jsx` | Navigation menu, file list, chat history |
-| `FileUpload.jsx` | Drag-drop CSV upload interface |
-| `ChatPanel.jsx` | Chat input, message history |
-| `ResultsPanel.jsx` | Display query results (raw data) |
-| `DataTable.jsx` | Paginated data grid viewer |
-| `ChartDisplay.jsx` | Renders Recharts (bar, line, pie, area) |
-| `StatsPanel.jsx` | Shows summary statistics (mean, median, mode, etc.) |
-| `InsightsPanel.jsx` | AI-generated insights from Groq |
-| `VisualBuilder.jsx` | Interactive chart customization UI |
-
-### Backend (`server/`)
-| File | Purpose |
-|------|---------|
-| `index.js` | Express server, routes, file upload handler, auth (JWT) |
-| `package.json` | Dependencies: Express, Multer, Axios, bcrypt, JWT, better-sqlite3 |
-| `auth.db` | SQLite database for user credentials (created on startup) |
-| `uploads/` | Temporary storage for uploaded CSV files |
-
-#### Express Routes
-| Method | Route | Handler |
-|--------|-------|---------|
-| `POST` | `/api/auth/signup` | Register new user |
-| `POST` | `/api/auth/login` | Authenticate user, return JWT |
-| `POST` | `/api/upload` | Multipart file upload, forward to Python service |
-| `POST` | `/api/ask` | Natural language question, forward to Python service |
-| `GET` | `/api/health` | Liveness check |
-
-### Python Service (`python-service/`)
-| File | Purpose |
-|------|---------|
-| `main.py` | FastAPI app, request routing, CORS, models (AnalyzeRequest, ChartRequest) |
-| `requirements.txt` | Python dependencies |
-| `.env` | Store `GROQ_API_KEY` |
-| `uploads/` | Persistent CSV file storage |
-
-#### Services (`python-service/services/`)
-| Module | Exports | Purpose |
-|--------|---------|---------|
-| `database.py` | `csv_to_sqlite()`, `execute_query()`, `validate_sql()` | CSV→SQLite, SQL execution, security checks |
-| `llm.py` | `nl_to_sql()` | Natural language→SQL translation (via Groq) |
-| `charts.py` | `generate_chart()` | Data→Plotly JSON (bar, line, pie, scatter, etc.) |
-| `analysis.py` | `compute_stats()`, `generate_insights()` | Descriptive stats, Groq-powered insights |
-| `prediction.py` | `predict()` | Linear regression, time-series forecast (Scikit-learn) |
-
-#### FastAPI Routes
-| Method | Route | Payload | Response |
-|--------|-------|---------|----------|
-| `POST` | `/upload` | CSV file | `{"db_path": "path/to/db.sqlite", "columns": [...], "row_count": N}` |
-| `POST` | `/analyze` | `{"question": str, "db_path": str}` | `{"sql": str, "results": [...], "chart": {...}, "stats": {...}, "insights": str}` |
-| `GET` | `/health` | — | `{"status": "ok"}` |
-
-### Configuration Files
-| File | Location | Purpose |
-|------|----------|---------|
-| `.env` | `python-service/` | Groq API key |
-| `.env` | `server/` | JWT secret, Python service URL |
-| `.gitignore` | Root | Exclude node_modules, venv, uploads, .env |
-
-### Sample Data (`sample_data/`)
-| File | Description |
-|------|-------------|
-| `sales_data.csv` | Example dataset for testing (regions, products, sales, profit) |
-
-### Data Flow
-
-```
-User uploads CSV
-     ↓
-Express: POST /api/upload → save locally
-     ↓
-Python: POST /upload → csv_to_sqlite() → return db_path
-     ↓
-User asks question in chat
-     ↓
-Express: POST /api/ask {question, db_path}
-     ↓
-Python: POST /analyze → nl_to_sql() (Groq) → execute_query() → generate_chart() → compute_stats() → generate_insights()
-     ↓
-Return to frontend: SQL, results, chart config, stats, insights
-     ↓
-React renders ChartDisplay, DataTable, StatsPanel, InsightsPanel
-```
-
-## �💬 Example Questions
+## 💬 Example Questions
 
 Upload `sample_data/sales_data.csv`, then try:
 
@@ -230,7 +128,7 @@ curl -X POST http://localhost:5000/api/ask \
   -d '{"question": "Show total sales per region"}'
 ```
 
-## 🔐 Security
+## Security
 
 - SQL queries are validated (SELECT-only)
 - DROP, DELETE, UPDATE, INSERT are blocked
