@@ -1,6 +1,11 @@
 import { useState, useRef } from 'react';
 
-export default function FileUpload({ onUploadSuccess, isUploading, setIsUploading, authFetch }) {
+export default function FileUpload({
+  onUploadSuccess,
+  isUploading,
+  setIsUploading,
+  authFetch,
+}) {
   const [dragActive, setDragActive] = useState(false);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState('');
@@ -50,44 +55,55 @@ export default function FileUpload({ onUploadSuccess, isUploading, setIsUploadin
   };
 
   return (
-    <div className="p-3">
+    <div className="p-4">
       <div
-        className={`relative rounded-lg p-4 text-center cursor-pointer border border-dashed transition-all duration-200 ${dragActive
-            ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)]'
-            : 'border-[var(--color-border-hover)] bg-[var(--color-bg-primary)] hover:border-[var(--color-text-muted)]'
-          }`}
+        className={`relative rounded-[12px] p-6 text-center cursor-pointer border-2 border-dashed transition-all duration-300 ${
+          dragActive
+            ? 'border-[var(--color-accent)] bg-[var(--color-accent-muted)] shadow-md'
+            : 'border-[var(--color-border-soft)] bg-[var(--color-bg-secondary)] hover:border-[var(--color-accent)] hover:bg-[var(--color-bg-elevated)]'
+        }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => inputRef.current?.click()}
       >
-        <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={handleChange} />
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".csv"
+          className="hidden"
+          onChange={handleChange}
+        />
 
         {isUploading ? (
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-5 h-5 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
-            <p className="text-xs text-[var(--color-text-muted)]">Uploading...</p>
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-6 h-6 border-2 border-[var(--color-accent)]/30 border-t-[var(--color-accent)] rounded-full animate-spin" />
+            <p className="text-sm text-[var(--color-text-secondary)] font-medium">
+              Uploading...
+            </p>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-1.5">
-            <span className="text-lg">📄</span>
-            <p className="text-xs font-medium text-[var(--color-text-secondary)]">
-              Drop CSV or click to browse
+          <div className="flex flex-col items-center gap-2.5">
+            <span className="text-2xl">📊</span>
+            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Drop CSV here or click to browse
             </p>
-            <p className="text-[10px] text-[var(--color-text-muted)]">Up to 50MB</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Up to 50MB · CSV format only</p>
           </div>
         )}
       </div>
 
       {error && (
-        <p className="text-[10px] text-[var(--color-danger)] mt-1.5 text-center">{error}</p>
+        <p className="text-xs text-[var(--color-danger)] mt-3 text-center font-medium">
+          {error}
+        </p>
       )}
 
       {fileName && !isUploading && !error && (
-        <div className="mt-2 flex items-center gap-1.5 text-[10px] text-[var(--color-success)]">
+        <div className="mt-3 flex items-center gap-2 text-xs text-[var(--color-success)] font-medium animate-fade-in">
           <span>✓</span>
-          <span className="truncate">{fileName} uploaded</span>
+          <span className="truncate">{fileName} ready</span>
         </div>
       )}
     </div>

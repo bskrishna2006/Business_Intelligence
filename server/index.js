@@ -233,6 +233,277 @@ app.post('/api/ask', requireAuth, async (req, res) => {
   }
 });
 
+// ─── POST /api/recommend-visualizations (protected) ───
+app.post('/api/recommend-visualizations', requireAuth, async (req, res) => {
+  try {
+    const { columns, schema, sample_rows } = req.body;
+
+    if (!columns || columns.length === 0) {
+      return res.status(400).json({ error: 'Columns information is required' });
+    }
+
+    console.log(`📊 Getting visualization recommendations for ${columns.length} columns`);
+
+    try {
+      // Try to get AI recommendations from Python service
+      const response = await axios.post(`${PYTHON_URL}/recommend-visualizations`, {
+        columns,
+        schema,
+        sample_rows,
+      }, {
+        timeout: 30000,
+      });
+
+      console.log(`✅ AI Recommendations generated: ${response.data.recommendations?.length || 0} suggestions`);
+      return res.json(response.data);
+    } catch (aiErr) {
+      console.warn('⚠️ AI recommendations failed, using fallback:', aiErr.message);
+      
+      // Fallback to basic recommendations if Python service fails
+      const fallbackRecommendations = generateFallbackRecommendations(columns);
+      return res.json({ recommendations: fallbackRecommendations });
+    }
+  } catch (err) {
+    console.error('❌ Recommendation error:', err.message);
+    res.status(500).json({
+      error: err.message || 'Failed to generate recommendations',
+    });
+  }
+});
+
+// ─── POST /api/datasets/auto-visualize (protected) ───
+app.post('/api/datasets/auto-visualize', requireAuth, async (req, res) => {
+  try {
+    if (!currentSession.dbPath) {
+      return res.status(400).json({ error: 'No dataset uploaded. Please upload a CSV file first.' });
+    }
+
+    console.log(`🎨 Auto-visualize initiated for dataset with ${currentSession.columns?.length || 0} columns`);
+
+    // Step 1: Get visualization recommendations from Python service
+    try {
+      const recommendationResponse = await axios.post(`${PYTHON_URL}/recommend-visualizations`, {
+        columns: currentSession.columns,
+        schema: currentSession.schema,
+        sample_rows: currentSession.sampleRows,
+      }, {
+        timeout: 30000,
+      });
+
+      if (!recommendationResponse.data.recommendations || recommendationResponse.data.recommendations.length === 0) {
+        return res.status(400).json({ error: 'Could not generate visualization recommendations.' });
+      }
+
+      const recommendations = recommendationResponse.data.recommendations;
+      console.log(`✅ Received ${recommendations.length} recommendations from AI`);
+
+      // Step 2: Validate recommendations
+      const validRecommendations = recommendations
+        .slice(0, 5) // Limit to 5 recommendations
+        .filter(rec => {
+          // Check if recommended columns exist in dataset
+          if (rec.features && Array.isArray(rec.features)) {
+            return rec.features.some(col => currentSession.columns.includes(col));
+          }
+          if (rec.columns && Array.isArray(rec.columns)) {
+            return rec.columns.some(col => currentSession.columns.includes(col));
+          }
+          // If no specific columns mentioned, accept the recommendation
+          return true;
+        })
+        .map((rec, idx) => ({
+          ...rec,
+          id: rec.id || `rec-${idx}`,
+          type: rec.type || 'bar',
+          title: rec.title || `${(rec.type || 'bar').charAt(0).toUpperCase() + (rec.type || 'bar').slice(1)} Chart`,
+          description: rec.description || rec.rationale || 'Recommended visualization',
+          x_axis: rec.x_axis || (rec.features?.[0]) || (rec.columns?.[0]) || null,
+          y_axis: rec.y_axis || (rec.features?.[1]) || (rec.columns?.[1]) || null,
+          columns: rec.columns || rec.features || []
+        }));
+
+      if (validRecommendations.length === 0) {
+        return res.status(400).json({ error: 'No valid recommendations generated for the dataset.' });
+      }
+
+      console.log(`✅ Validated ${validRecommendations.length} recommendations`);
+
+      // Step 3: Call Python service to generate chart data
+      let chartsData = {};
+      try {
+        const chartsResponse = await axios.post(`${PYTHON_URL}/analyze/generate-charts`, {
+          recommendations: validRecommendations,
+          sample_rows: currentSession.sampleRows,
+          db_path: currentSession.dbPath,
+          query: 'SELECT * FROM data',
+        }, {
+          timeout: 60000,
+        });
+
+        chartsData = chartsResponse.data.charts || {};
+        console.log(`✅ Generated chart data for ${Object.keys(chartsData).length} visualizations`);
+      } catch (chartErr) {
+        console.warn('⚠️ Chart generation failed:', chartErr.message);
+        // Continue without chart data - return recommendations only
+        chartsData = {};
+      }
+
+      // Step 4: Combine recommendations with chart data
+      const result = {
+        recommendations: validRecommendations.map(rec => {
+          const chartId = rec.id || `rec-0`;
+          const chartData = chartsData[chartId] || {};
+          
+          return {
+            id: rec.id,
+            type: rec.type,
+            title: rec.title,
+            description: rec.description,
+            columns: rec.columns,
+            confidence: rec.confidence || 0.75,
+            x_axis: rec.x_axis,
+            y_axis: rec.y_axis,
+            chartData: {
+              data: chartData.data || [],
+              config: chartData.config || {},
+              metadata: chartData.metadata || {}
+            }
+          };
+        }),
+        summary: {
+          totalRecommendations: validRecommendations.length,
+          datasetInfo: {
+            rowCount: currentSession.rowCount,
+            columnCount: currentSession.columns?.length || 0,
+            columns: currentSession.columns || []
+          }
+        }
+      };
+
+      console.log(`✨ Auto-visualization complete with ${result.recommendations.length} recommendations`);
+      res.json(result);
+
+    } catch (recErr) {
+      console.error('❌ Recommendation generation error:', recErr.response?.data || recErr.message);
+      res.status(500).json({
+        error: recErr.response?.data?.detail || recErr.message || 'Failed to generate recommendations'
+      });
+    }
+  } catch (err) {
+    console.error('❌ Auto-visualize error:', err.message);
+    res.status(500).json({
+      error: err.message || 'Auto-visualization failed'
+    });
+  }
+});
+
+// ─── POST /api/datasets/auto-dashboard (protected) ───
+app.post('/api/datasets/auto-dashboard', requireAuth, async (req, res) => {
+  try {
+    if (!currentSession.dbPath) {
+      return res.status(400).json({ error: 'No dataset uploaded. Please upload a CSV file first.' });
+    }
+
+    console.log(`🎨 Auto-dashboard initiated for dataset with ${currentSession.columns?.length || 0} columns`);
+
+    // Call Python service to generate dashboard with chart data
+    try {
+      const dashboardResponse = await axios.post(`${PYTHON_URL}/analyze/auto-dashboard`, {
+        columns: currentSession.columns,
+        schema: currentSession.schema,
+        sample_rows: currentSession.sampleRows.slice(0, 500),
+        db_path: currentSession.dbPath,
+      }, {
+        timeout: 60000,
+      });
+
+      if (!dashboardResponse.data.charts || dashboardResponse.data.charts.length === 0) {
+        return res.status(400).json({ error: 'Could not generate dashboard visualizations.' });
+      }
+
+      const charts = dashboardResponse.data.charts;
+      console.log(`✅ Generated ${charts.length} dashboard charts`);
+
+      res.json({
+        charts: charts,
+        summary: {
+          totalCharts: charts.length,
+          datasetInfo: {
+            rowCount: currentSession.rowCount,
+            columnCount: currentSession.columns?.length || 0,
+            columns: currentSession.columns || []
+          }
+        }
+      });
+
+    } catch (dashErr) {
+      console.error('❌ Dashboard generation error:', dashErr.response?.data || dashErr.message);
+      res.status(500).json({
+        error: dashErr.response?.data?.detail || dashErr.message || 'Failed to generate dashboard'
+      });
+    }
+  } catch (err) {
+    console.error('❌ Auto-dashboard error:', err.message);
+    res.status(500).json({
+      error: err.message || 'Dashboard generation failed'
+    });
+  }
+});
+
+// ─── Fallback Recommendation Generator ───
+function generateFallbackRecommendations(columns) {
+  const recommendations = [];
+  
+  if (columns.length < 2) {
+    return recommendations;
+  }
+
+  // Simple heuristics for fallback recommendations
+  recommendations.push({
+    id: 'fallback-bar',
+    type: 'bar',
+    title: 'Categorical Overview',
+    rationale: 'Display values across different categories or time periods.',
+    features: columns.slice(0, 2),
+    confidence: 0.7,
+  });
+
+  if (columns.length >= 2) {
+    recommendations.push({
+      id: 'fallback-line',
+      type: 'line',
+      title: 'Trend Analysis',
+      rationale: 'Track changes over time or identify patterns in sequential data.',
+      features: columns.slice(0, 2),
+      confidence: 0.65,
+    });
+  }
+
+  if (columns.length >= 1) {
+    recommendations.push({
+      id: 'fallback-pie',
+      type: 'pie',
+      title: 'Distribution Breakdown',
+      rationale: 'Show the proportion of each category in your dataset.',
+      features: [columns[0]],
+      confidence: 0.6,
+    });
+  }
+
+  if (columns.length >= 2) {
+    recommendations.push({
+      id: 'fallback-scatter',
+      type: 'scatter',
+      title: 'Correlation Exploration',
+      rationale: 'Identify relationships between two numeric variables.',
+      features: columns.slice(0, 2),
+      confidence: 0.65,
+    });
+  }
+
+  return recommendations;
+}
+
 // ─── Health Check ───
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', python_service: PYTHON_URL });

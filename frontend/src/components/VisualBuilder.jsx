@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import AutoDashboard from './AutoDashboard';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter,
   PieChart, Pie, Cell,
@@ -15,11 +16,61 @@ const CHART_TYPES = [
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-export default function VisualBuilder({ columns, tableData }) {
+export default function VisualBuilder({ columns, tableData, datasetInfo }) {
   const [chartType, setChartType] = useState('bar');
   const [xCol, setXCol] = useState('');
   const [yCols, setYCols] = useState([]);
+  const [autoRecs, setAutoRecs] = useState([]);
+  const [isLoadingAuto, setIsLoadingAuto] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [showAutoDashboard, setShowAutoDashboard] = useState(false);
+
+  // Fetch auto-visualization recommendations
+  const fetchAutoVisualizations = async () => {
+    if (!tableData || tableData.length === 0 || !columns) return;
+    
+    setIsLoadingAuto(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch('/api/datasets/auto-visualize', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          dataset_id: datasetInfo?.dataset_id,
+          columns: columns || [],
+          schema: datasetInfo?.schema || {},
+          sample_rows: tableData.slice(0, 100) || [],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.recommendations) {
+        setAutoRecs(data.recommendations);
+      }
+    } catch (err) {
+      console.error('Failed to fetch auto-visualizations:', err);
+    } finally {
+      setIsLoadingAuto(false);
+    }
+  };
+
+  // Load recommendations on mount
+  useEffect(() => {
+    if (tableData && tableData.length > 0) {
+      fetchAutoVisualizations();
+    }
+  }, [tableData?.length]);
+
+  // Apply recommendation to builder
+  const applyRecommendation = (rec) => {
+    if (rec.x_axis && rec.y_axis) {
+      setXCol(rec.x_axis);
+      setYCols([rec.y_axis]);
+      setChartType(rec.type || 'bar');
+    }
+  };
 
   // Determine numeric vs non-numeric columns from actual data
   const { numericCols, categoricalCols } = useMemo(() => {
@@ -93,6 +144,11 @@ export default function VisualBuilder({ columns, tableData }) {
 
   const canRender = xCol && yCols.length > 0 && chartData.length > 0;
 
+  // Show Auto Dashboard if toggled
+  if (showAutoDashboard) {
+    return <AutoDashboard tableData={tableData} columns={columns} datasetInfo={datasetInfo} onClose={() => setShowAutoDashboard(false)} />;
+  }
+
   return (
     <div className="flex h-full">
       {/* Column Palette — left sidebar */}
@@ -143,6 +199,21 @@ export default function VisualBuilder({ columns, tableData }) {
 
       {/* Chart area */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar with Auto Visualization Button */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-card)] flex-wrap gap-2">
+          <button
+            onClick={() => setShowAutoDashboard(true)}
+            className="px-5 py-2.5 rounded-[11px] font-semibold text-sm bg-gradient-to-r from-[#d4a574] to-[#ddb885] text-white shadow-md hover:shadow-lg transition-all flex items-center gap-2.5 flex-shrink-0"
+          >
+            <span className="text-base">✨</span>
+            Auto Visualization
+          </button>
+          
+          <div className="text-xs text-[var(--color-text-muted)] font-medium">
+            or build manually below →
+          </div>
+        </div>
+
         {/* Config bar */}
         <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border)] flex-wrap">
           {/* Chart type selector */}
@@ -215,6 +286,37 @@ export default function VisualBuilder({ columns, tableData }) {
             </button>
           )}
         </div>
+
+        {/* Auto Visualization Recommendations */}
+        {autoRecs.length > 0 && (
+          <div className="border-t border-[var(--color-border)] px-4 py-3 bg-[var(--color-bg-card)]">
+            <div className="flex items-center justify-between mb-2.5">
+              <label className="text-xs font-bold text-[var(--color-text-primary)] flex items-center gap-2">
+                ✨ AI Recommendations
+                {isLoadingAuto && <span className="text-[10px] animate-pulse">Loading...</span>}
+              </label>
+              <span className="text-[11px] text-[var(--color-text-muted)]">{autoRecs.length} charts</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 scroll-smooth">
+              {autoRecs.map((rec, idx) => (
+                <button
+                  key={rec.id || idx}
+                  onClick={() => applyRecommendation(rec)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-[9px] border text-xs font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                    xCol === rec.x_axis && yCols.includes(rec.y_axis) && chartType === rec.type
+                      ? 'bg-[var(--color-accent)] text-white border-[var(--color-accent)]'
+                      : 'bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] border-[var(--color-border)] hover:border-[var(--color-accent)] hover:text-[var(--color-text-primary)]'
+                  }`}
+                  title={rec.rationale}
+                >
+                  <span>{rec.type === 'bar' ? '📊' : rec.type === 'line' ? '📈' : rec.type === 'pie' ? '🥧' : rec.type === 'scatter' ? '🔹' : '📉'}</span>
+                  {rec.title}
+                  {rec.confidence && <span className="text-[10px] opacity-70">({Math.round(rec.confidence * 100)}%)</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Chart render */}
         <div className="flex-1 p-4 flex items-center justify-center overflow-hidden">

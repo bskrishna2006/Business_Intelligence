@@ -105,6 +105,17 @@ export default function App() {
     }
   };
 
+  const handleCreateVisualization = (recommendation) => {
+    console.log('Creating visualization:', recommendation);
+    // Generate a question based on the recommendation
+    const columns = recommendation.features?.join(', ') || 'the data';
+    const question = `Create a ${recommendation.type} chart showing ${columns}. ${recommendation.rationale || ''}`;
+    
+    // Navigate to Ask AI page and send the question
+    setActivePage('ask');
+    handleSendMessage(question);
+  };
+
   if (!authChecked) return null;
   if (view === 'landing') return <LandingPage onGetStarted={() => setView('auth')} />;
   if (view === 'auth') return <AuthPage onLogin={handleLogin} onBack={() => setView('landing')} />;

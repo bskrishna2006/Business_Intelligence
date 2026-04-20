@@ -22,6 +22,11 @@ from services.llm import nl_to_sql
 from services.charts import generate_chart
 from services.analysis import compute_stats, generate_insights
 from services.prediction import predict
+from services.recommendations import recommend_visualizations
+from services.recharts_generator import generate_recharts_data, generate_multiple_charts
+from services.auto_visualize import auto_visualize
+from services.chart_generator import generate_multiple_chart_data
+from services.feature_analyzer import FeatureAnalyzer
 
 # ─── FastAPI App ───
 app = FastAPI(
@@ -50,6 +55,29 @@ class AnalyzeRequest(BaseModel):
     db_path: str
     schema: dict
     sample_rows: list
+
+
+class RecommendVisualizationsRequest(BaseModel):
+    columns: list = None  # Frontend format: list of column names
+    schema: dict = None  # Frontend format: schema info
+    sample_rows: list = None  # Frontend format: sample data rows
+    db_path: str = None  # Legacy format: database path
+    query: str = "SELECT * FROM data"  # Legacy format: optional SQL query
+
+
+class GenerateChartsRequest(BaseModel):
+    recommendations: list  # List of recommendation objects with type, columns, etc.
+    sample_rows: list  # Dataset sample rows
+    db_path: str = None  # Optional: full database path if available
+    query: str = "SELECT * FROM data"  # Optional: SQL query to fetch full dataset
+
+
+class AutoDashboardRequest(BaseModel):
+    columns: list = None
+    schema: dict = None
+    sample_rows: list = None
+    db_path: str = None
+    query: str = "SELECT * FROM data"
 
 
 # ─── POST /upload ───
@@ -175,6 +203,159 @@ async def analyze_data(request: AnalyzeRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+# ─── POST /recommend-visualizations ───
+@app.post("/recommend-visualizations")
+async def recommend_visualizations_endpoint(request: RecommendVisualizationsRequest):
+    """
+    HYBRID auto-visualization: rules + LLM for intelligent recommendations.
+    """
+    try:
+        # Use frontend format (columns, sample_rows)
+        if request.columns and request.sample_rows:
+            print(f"\n📊 Using HYBRID auto-visualization engine...")
+            print(f"   Columns: {len(request.columns)}")
+            print(f"   Rows: {len(request.sample_rows)}")
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(request.sample_rows)
+            
+            # Use new hybrid analyzer (rules + LLM)
+            analyzer = FeatureAnalyzer()
+            result = analyzer.analyze_dataset(df, max_recommendations=5)
+            
+            return {
+                "recommendations": result.get("recommendations", []),
+                "summary": result.get("summary", {}),
+                "status": "success"
+            }
+        
+        else:
+            raise ValueError("Columns and sample_rows required for auto-visualization")
+    
+    except Exception as e:
+        print(f"❌ Recommendation error: {str(e)}")
+        return {
+            "recommendations": [],
+            "error": str(e),
+            "status": "error"
+        }
+
+
+# ─── POST /analyze/generate-charts ───
+@app.post("/analyze/generate-charts")
+async def generate_charts(request: GenerateChartsRequest):
+    """
+    Generate Recharts-compatible chart data for visualization recommendations.
+    """
+    try:
+        print(f"\n📊 Generating chart data for {len(request.recommendations)} recommendations...")
+        
+        # Get the dataset
+        df = None
+        if request.db_path:
+            # Load from database
+            import sqlite3
+            conn = sqlite3.connect(request.db_path)
+            cursor = conn.cursor()
+            cursor.execute(request.query or "SELECT * FROM data")
+            cols = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+            conn.close()
+            df = pd.DataFrame(rows, columns=cols)
+            print(f"   Loaded from DB: {len(df)} rows, {len(df.columns)} columns")
+        
+        elif request.sample_rows:
+            # Use sample rows
+            df = pd.DataFrame(request.sample_rows)
+            print(f"   Using sample data: {len(df)} rows, {len(df.columns)} columns")
+        
+        else:
+            return {
+                "charts": {},
+                "error": "No dataset provided"
+            }
+        
+        # Generate chart data for each recommendation
+        chart_data_map = generate_multiple_chart_data(df, request.recommendations)
+        
+        print(f"   ✅ Generated {len(chart_data_map)} charts")
+        
+        return {
+            "charts": chart_data_map,
+            "summary": {
+                "total": len(chart_data_map),
+                "success": sum(1 for c in chart_data_map.values() if "error" not in c)
+            }
+        }
+    
+    except Exception as e:
+        print(f"❌ Chart generation error: {str(e)}")
+        return {
+            "charts": {},
+            "error": str(e)
+        }
+
+
+# ─── POST /analyze/auto-dashboard ───
+@app.post("/analyze/auto-dashboard")
+async def auto_dashboard(request: AutoDashboardRequest):
+    """
+    Generate a complete dashboard with multiple related visualizations.
+    AI analyzes data and creates 6-8 charts showing different aspects.
+    """
+    try:
+        print(f"\n🎨 Auto-dashboard generation...")
+        
+        # Get the dataset
+        df = None
+        if request.db_path:
+            import sqlite3
+            conn = sqlite3.connect(request.db_path)
+            cursor = conn.cursor()
+            cursor.execute(request.query or "SELECT * FROM data")
+            cols = [description[0] for description in cursor.description]
+            rows = cursor.fetchall()
+            conn.close()
+            df = pd.DataFrame(rows, columns=cols)
+            print(f"   Loaded from DB: {len(df)} rows, {len(df.columns)} columns")
+        
+        elif request.sample_rows:
+            df = pd.DataFrame(request.sample_rows)
+            print(f"   Using sample data: {len(df)} rows, {len(df.columns)} columns")
+        
+        else:
+            return {
+                "charts": [],
+                "error": "No dataset provided"
+            }
+        
+        # Use FeatureAnalyzer to generate intelligent dashboard
+        analyzer = FeatureAnalyzer()
+        charts = analyzer.generate_dashboard(df)
+        
+        print(f"   ✅ Generated {len(charts)} dashboard charts")
+        
+        return {
+            "charts": charts,
+            "summary": {
+                "total": len(charts),
+                "dataset_info": {
+                    "rows": len(df),
+                    "columns": len(df.columns),
+                }
+            }
+        }
+    
+    except Exception as e:
+        print(f"❌ Dashboard generation error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "charts": [],
+            "error": str(e)
+        }
 
 
 # ─── Health Check ───

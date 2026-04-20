@@ -1,31 +1,46 @@
 @import "tailwindcss";
 
-/* ── Design Tokens — Professional Dark Theme ── */
-@theme {
-  --color-bg-primary: #111318;
-  --color-bg-secondary: #16181d;
-  --color-bg-card: #1c1f26;
-  --color-bg-elevated: #22252e;
-  --color-bg-glass: rgba(28, 31, 38, 0.85);
-  --color-accent: #3b82f6;
-  --color-accent-soft: #2563eb;
-  --color-accent-muted: rgba(59, 130, 246, 0.12);
-  --color-success: #22c55e;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-text-primary: #e4e5e9;
-  --color-text-secondary: #9ca3b0;
-  --color-text-muted: #5f6672;
-  --color-border: rgba(255, 255, 255, 0.06);
-  --color-border-hover: rgba(255, 255, 255, 0.12);
-  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+/* ── Design Tokens — Warm, Human-Centered Aesthetic ── */
+:root {
+  /* Backgrounds: Warm neutrals and creams */
+  --color-bg-primary: #faf8f6;
+  --color-bg-secondary: #f5f2ef;
+  --color-bg-card: #ffffff;
+  --color-bg-elevated: #fffbf7;
+  --color-bg-glass: rgba(255, 251, 247, 0.9);
+  
+  /* Accents: Warm, inviting colors */
+  --color-accent: #d4a574;
+  --color-accent-soft: #ddb885;
+  --color-accent-muted: rgba(212, 165, 116, 0.08);
+  --color-accent-secondary: #7a9b99;
+  --color-accent-secondary-soft: rgba(122, 155, 153, 0.1);
+  
+  /* Status colors: Warm versions */
+  --color-success: #6b9b7e;
+  --color-warning: #d4965a;
+  --color-danger: #c85a54;
+  
+  /* Text: Warm grays */
+  --color-text-primary: #3d3531;
+  --color-text-secondary: #8b8078;
+  --color-text-muted: #a9a09a;
+  
+  /* Borders: Soft, subtle */
+  --color-border: rgba(61, 53, 49, 0.06);
+  --color-border-hover: rgba(61, 53, 49, 0.12);
+  --color-border-soft: rgba(212, 165, 116, 0.12);
+  
+  /* Font stack: Warm typography */
+  --font-sans: 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
+  --font-display: 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
 }
 
 /* ── Base ── */
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: #2a2d36 transparent;
+    scrollbar-color: rgba(212, 165, 116, 0.3) transparent;
   }
 
   body {
@@ -34,52 +49,115 @@
     color: var(--color-text-primary);
     min-height: 100vh;
     overflow: hidden;
+    letter-spacing: -0.3px;
   }
 
   #root {
     min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+
+  p {
+    line-height: 1.6;
+    letter-spacing: -0.2px;
+  }
+
+  /* Links with warm underline */
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+    position: relative;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-accent-soft);
+    }
   }
 }
 
 /* ── Utilities ── */
 @utility glass {
   background: var(--color-bg-glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--color-border);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--color-border-soft);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.04);
 }
 
 @utility card {
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(61, 53, 49, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
     border-color: var(--color-border-hover);
+    box-shadow: 0 8px 16px rgba(61, 53, 49, 0.08);
+    transform: translateY(-1px);
   }
 }
 
 @utility btn-primary {
   background: var(--color-accent);
   color: #fff;
-  border-radius: 8px;
+  border-radius: 11px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  letter-spacing: -0.2px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(212, 165, 116, 0.25);
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: var(--color-accent-soft);
+    box-shadow: 0 6px 16px rgba(212, 165, 116, 0.35);
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(212, 165, 116, 0.2);
   }
 
   &:disabled {
-    opacity: 0.35;
+    opacity: 0.4;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+@utility btn-secondary {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-soft);
+  border-radius: 11px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--color-bg-elevated);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
   }
 }
 
 @utility btn-ghost {
   background: transparent;
   color: var(--color-text-secondary);
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  border-radius: 11px;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
 
   &:hover {
     background: var(--color-accent-muted);
@@ -87,11 +165,36 @@
   }
 }
 
+@utility input-field {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  padding: 0.75rem 1rem;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: var(--color-text-primary);
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: var(--color-border-hover);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px var(--color-accent-muted);
+  }
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
+}
+
 /* ── Animations ── */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
 
   to {
@@ -100,6 +203,37 @@
   }
 }
 
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
 @keyframes slide-up {
   from {
     opacity: 0;

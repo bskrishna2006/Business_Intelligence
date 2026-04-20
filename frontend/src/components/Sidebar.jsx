@@ -1,49 +1,21 @@
 const NAV_ITEMS = [
   {
-    id: 'dashboard', label: 'Dashboard', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
-        <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-      </svg>
-    )
+    id: 'dashboard', label: 'Dashboard', icon: '📊'
   },
   {
-    id: 'ask', label: 'Ask AI', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-      </svg>
-    )
+    id: 'ask', label: 'Ask AI', icon: '💬'
   },
   {
-    id: 'visualize', label: 'Visualize', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" />
-        <line x1="6" y1="20" x2="6" y2="14" /><line x1="2" y1="20" x2="22" y2="20" />
-      </svg>
-    )
+    id: 'visualize', label: 'Visualize', icon: '📈'
   },
   {
-    id: 'data', label: 'Data', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
-        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-      </svg>
-    )
+    id: 'data', label: 'Browse', icon: '📋'
   },
   {
-    id: 'insights', label: 'Insights', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" />
-        <line x1="12" y1="16" x2="12.01" y2="16" />
-      </svg>
-    )
+    id: 'insights', label: 'Insights', icon: '✨'
   },
   {
-    id: 'sql', label: 'SQL', icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" />
-      </svg>
-    )
+    id: 'sql', label: 'SQL', icon: '💾'
   },
 ];
 
@@ -53,32 +25,32 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
     : '?';
 
   return (
-    <aside className="w-60 h-screen flex flex-col bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)] shrink-0">
+    <aside className="w-60 h-screen flex flex-col bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-soft)] shrink-0">
 
-      {/* Brand */}
-      <div className="px-5 py-4 border-b border-[var(--color-border)]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white text-sm font-bold">
-            BI
+      {/* Brand with warm gradient */}
+      <div className="px-5 py-5 border-b border-[var(--color-border-soft)]">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-[11px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-sm font-bold shadow-md">
+            ✨
           </div>
           <div>
-            <h1 className="text-sm font-semibold text-[var(--color-text-primary)]">InsightAI</h1>
-            <p className="text-[10px] text-[var(--color-text-muted)]">Business Intelligence</p>
+            <h1 className="text-sm font-bold text-[var(--color-text-primary)]">InsightAI</h1>
+            <p className="text-[10px] text-[var(--color-text-muted)] font-[450]">Data Explorer</p>
           </div>
         </div>
       </div>
 
-      {/* Upload */}
-      <div className="border-b border-[var(--color-border)]">
+      {/* Upload section */}
+      <div className="border-b border-[var(--color-border-soft)]">
         {children}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] px-3 mb-2">
+      {/* Warm Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3">
           Pages
         </p>
-        <div className="space-y-0.5">
+        <div className="space-y-1.5">
           {NAV_ITEMS.map((item) => {
             const isActive = activePage === item.id;
             const isLocked = item.id !== 'dashboard' && !datasetInfo;
@@ -86,21 +58,19 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
               <button
                 key={item.id}
                 onClick={() => !isLocked && onNavigate(item.id)}
-                title={isLocked ? 'Upload a dataset first' : item.label}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group
+                title={isLocked ? 'Upload data first' : item.label}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-sm font-medium transition-all duration-200 group
                   ${isActive
-                    ? 'bg-[var(--color-accent)] text-white shadow-sm'
+                    ? 'bg-gradient-to-r from-[#d4a574] to-[#ddb885] text-white shadow-md'
                     : isLocked
-                      ? 'text-[var(--color-text-muted)] opacity-40 cursor-not-allowed'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)]'
+                      ? 'text-[var(--color-text-muted)] opacity-35 cursor-not-allowed'
+                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] hover:shadow-sm'
                   }`}
               >
-                <span className={isActive ? 'text-white' : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-primary)]'}>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
+                <span className="text-lg">{item.icon}</span>
+                <span className="flex-1 text-left">{item.label}</span>
                 {isLocked && (
-                  <svg className="ml-auto w-3 h-3 opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <svg className="w-3.5 h-3.5 opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                   </svg>
                 )}
@@ -109,27 +79,27 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
           })}
         </div>
 
-        {/* Dataset info */}
+        {/* Dataset info with warm styling */}
         {datasetInfo && (
-          <div className="mt-4">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-muted)] px-3 mb-2">
-              Dataset
+          <div className="mt-6 pt-4 border-t border-[var(--color-border-soft)]">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3">
+              Current Dataset
             </p>
-            <div className="px-3 py-2.5 rounded-lg bg-[var(--color-bg-primary)] border border-[var(--color-border)] mx-1">
-              <div className="flex gap-3 text-[10px] text-[var(--color-text-muted)] mb-2">
-                <span className="font-medium text-[var(--color-text-secondary)]">{datasetInfo.row_count?.toLocaleString()} rows</span>
-                <span>·</span>
-                <span className="font-medium text-[var(--color-text-secondary)]">{datasetInfo.columns?.length} cols</span>
+            <div className="card px-3.5 py-3 border-[var(--color-border-soft)] mx-0">
+              <div className="flex gap-2 text-[11px] text-[var(--color-text-secondary)] mb-3 font-medium">
+                <span>{datasetInfo.row_count?.toLocaleString()} rows</span>
+                <span className="text-[var(--color-text-muted)]">·</span>
+                <span>{datasetInfo.columns?.length} cols</span>
               </div>
-              <div className="flex flex-wrap gap-1">
-                {datasetInfo.columns?.slice(0, 6).map((col) => (
-                  <span key={col} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] font-mono truncate max-w-[80px]">
+              <div className="flex flex-wrap gap-1.5">
+                {datasetInfo.columns?.slice(0, 5).map((col) => (
+                  <span key={col} className="text-[9px] px-2 py-1 rounded-[8px] bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-mono truncate max-w-[70px] border border-[var(--color-border-soft)]">
                     {col}
                   </span>
                 ))}
-                {datasetInfo.columns?.length > 6 && (
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)]">
-                    +{datasetInfo.columns.length - 6}
+                {datasetInfo.columns?.length > 5 && (
+                  <span className="text-[9px] px-2 py-1 rounded-[8px] bg-[var(--color-bg-primary)] text-[var(--color-text-muted)]">
+                    +{datasetInfo.columns.length - 5}
                   </span>
                 )}
               </div>
@@ -138,21 +108,21 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
         )}
       </nav>
 
-      {/* User */}
-      <div className="px-3 py-3 border-t border-[var(--color-border)]">
+      {/* User section with warm styling */}
+      <div className="px-3 py-4 border-t border-[var(--color-border-soft)] bg-[var(--color-bg-primary)]">
         {user ? (
-          <div className="flex items-center gap-2.5 px-1">
-            <div className="w-7 h-7 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-[var(--color-text-primary)] truncate">{user.name}</p>
+              <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{user.name}</p>
               <p className="text-[10px] text-[var(--color-text-muted)] truncate">{user.email}</p>
             </div>
             <button
               onClick={onLogout}
               title="Sign out"
-              className="text-[var(--color-text-muted)] hover:text-red-400 transition-colors p-1 rounded shrink-0"
+              className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-all p-2 rounded-[8px] shrink-0"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -161,7 +131,7 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
             </button>
           </div>
         ) : (
-          <p className="text-[10px] text-[var(--color-text-muted)] text-center">Groq AI · FastAPI · SQLite</p>
+          <p className="text-[10px] text-[var(--color-text-muted)] text-center font-medium">Powered by Groq</p>
         )}
       </div>
     </aside>
