@@ -39,27 +39,31 @@ const STATS = [
     { value: '< 10s', label: 'Setup time' },
 ];
 
-export default function LandingPage({ onGetStarted }) {
+export default function LandingPage({ onGetStarted, theme, onToggleTheme }) {
     const [hoveredFeature, setHoveredFeature] = useState(null);
 
     return (
         <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] overflow-x-hidden">
             {/* Warm, organic background gradient */}
             <div className="fixed inset-0 pointer-events-none">
-                <div className="absolute top-[-15%] left-[-5%] w-[500px] h-[500px] bg-[#d4a574] opacity-8 rounded-full blur-[140px]" />
-                <div className="absolute bottom-[-12%] right-[-8%] w-[450px] h-[450px] bg-[#7a9b99] opacity-6 rounded-full blur-[130px]" />
-                <div className="absolute top-[50%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[#c8b4a0] opacity-5 rounded-full blur-[120px]" />
+                <div className="absolute top-[-15%] left-[-5%] w-[500px] h-[500px] bg-[var(--color-accent)] opacity-10 rounded-full blur-[140px]" />
+                <div className="absolute bottom-[-12%] right-[-8%] w-[450px] h-[450px] bg-[var(--color-accent-secondary)] opacity-8 rounded-full blur-[130px]" />
+                <div className="absolute top-[50%] left-[50%] -translate-x-1/2 w-[300px] h-[300px] bg-[var(--color-accent-soft)] opacity-6 rounded-full blur-[120px]" />
             </div>
 
             {/* Nav */}
             <nav className="relative z-10 flex items-center justify-between px-8 py-6 border-b border-[var(--color-border-soft)]">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-[12px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-xs font-bold shadow-md">
+                    <div className="w-9 h-9 rounded-[12px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-xs font-bold shadow-md">
                         ✨
                     </div>
                     <span className="text-lg font-semibold text-[var(--color-text-primary)]">InsightAI</span>
                 </div>
                 <div className="flex items-center gap-4">
+                    <button onClick={onToggleTheme} className="theme-toggle">
+                        <span>{theme === 'dark' ? 'Night' : 'Light'}</span>
+                        <span className="text-base leading-none">{theme === 'dark' ? '🌙' : '☀️'}</span>
+                    </button>
                     <button
                         onClick={onGetStarted}
                         className="px-5 py-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors font-medium"
@@ -84,7 +88,7 @@ export default function LandingPage({ onGetStarted }) {
 
                 <h1 className="text-5xl sm:text-7xl font-bold leading-[1.2] mb-8 text-[var(--color-text-primary)]">
                     Talk to your data,{' '}
-                    <span className="bg-gradient-to-r from-[#d4a574] via-[#ddb885] to-[#7a9b99] bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-[var(--color-accent)] via-[var(--color-accent-soft)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent">
                         naturally.
                     </span>
                 </h1>
@@ -115,7 +119,7 @@ export default function LandingPage({ onGetStarted }) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     {STATS.map((s) => (
                         <div key={s.label} className="card p-8 text-center">
-                            <p className="text-5xl font-bold bg-gradient-to-r from-[#d4a574] to-[#7a9b99] bg-clip-text text-transparent mb-3">
+                            <p className="text-5xl font-bold bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent mb-3">
                                 {s.value}
                             </p>
                             <p className="text-sm text-[var(--color-text-secondary)]">{s.label}</p>
@@ -161,7 +165,7 @@ export default function LandingPage({ onGetStarted }) {
 
             {/* Warm CTA section */}
             <section className="relative z-10 max-w-3xl mx-auto px-6 pb-32 text-center">
-                <div className="card p-12 border-[var(--color-border-soft)] bg-gradient-to-br from-[var(--color-bg-card)] to-[var(--color-bg-elevated)]">
+                <div className="card p-12 border-[var(--color-border-soft)] bg-gradient-to-br from-[var(--color-bg-card)] to-[var(--color-bg-secondary)]">
                     <h2 className="text-3xl font-bold mb-4 text-[var(--color-text-primary)]">
                         Ready to talk to your data?
                     </h2>
@@ -181,7 +185,7 @@ export default function LandingPage({ onGetStarted }) {
             <footer className="relative z-10 border-t border-[var(--color-border-soft)] py-8 px-8">
                 <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between">
                     <div className="flex items-center gap-3 mb-4 sm:mb-0">
-                        <div className="w-7 h-7 rounded-[10px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-xs font-bold">
+                        <div className="w-7 h-7 rounded-[10px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-xs font-bold">
                             ✨
                         </div>
                         <span className="text-sm text-[var(--color-text-secondary)]">

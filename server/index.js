@@ -198,6 +198,21 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
   }
 });
 
+// ─── GET /api/datasets/current (protected) ───
+app.get('/api/datasets/current', requireAuth, (req, res) => {
+  if (!currentSession.dbPath) {
+    return res.status(404).json({ error: 'No dataset in current session.' });
+  }
+
+  res.json({
+    table_name: currentSession.tableName,
+    columns: currentSession.columns,
+    row_count: currentSession.rowCount,
+    sample_rows: currentSession.sampleRows,
+    schema: currentSession.schema,
+  });
+});
+
 // ─── POST /api/ask (protected) ───
 app.post('/api/ask', requireAuth, async (req, res) => {
   try {

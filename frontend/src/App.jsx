@@ -22,11 +22,21 @@ function authFetch(url, options = {}) {
   });
 }
 
+function getInitialTheme() {
+  if (typeof window === 'undefined') return 'light';
+  const stored = localStorage.getItem('ui_theme');
+  if (stored === 'light' || stored === 'dark') return stored;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export default function App() {
+  const [theme, setTheme] = useState(getInitialTheme);
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [view, setView] = useState('landing'); // 'landing' | 'auth' | 'app'
   const [activePage, setActivePage] = useState('dashboard');
+  const [selectedRecommendation, setSelectedRecommendation] = useState(null);
+  const [savedDashboard, setSavedDashboard] = useState(null);
 
   const [datasetInfo, setDatasetInfo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -34,6 +44,11 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [fullData, setFullData] = useState(null);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('ui_theme', theme);
+  }, [theme]);
 
   // ─── Restore session ───
   useEffect(() => {
@@ -48,6 +63,33 @@ export default function App() {
       .catch(() => localStorage.removeItem('auth_token'))
       .finally(() => setAuthChecked(true));
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      try {
+        const res = await authFetch('/api/datasets/current');
+        if (!res.ok) return;
+        const data = await res.json();
+        setDatasetInfo(data);
+        setActivePage((prev) => (prev === 'landing' ? 'dashboard' : prev));
+
+        try {
+          const tableRes = await authFetch('/api/ask', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: 'Show all data' }),
+          });
+          const tableData = await tableRes.json();
+          setFullData(tableData.table_result || data.sample_rows);
+        } catch {
+          setFullData(data.sample_rows || []);
+        }
+      } catch {
+        // Ignore restore errors
+      }
+    })();
+  }, [user]);
 
   const handleLogin = (userData) => { setUser(userData); setView('app'); };
 
@@ -81,14 +123,14 @@ export default function App() {
     }
   };
 
-  const handleSendMessage = async (question) => {
+  const handleSendMessage = async (question, messageData = {}) => {
     setMessages((prev) => [...prev, { role: 'user', content: question }]);
     setIsLoading(true);
     try {
       const res = await authFetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, ...messageData }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Analysis failed');
@@ -107,18 +149,40 @@ export default function App() {
 
   const handleCreateVisualization = (recommendation) => {
     console.log('Creating visualization:', recommendation);
-    // Generate a question based on the recommendation
-    const columns = recommendation.features?.join(', ') || 'the data';
-    const question = `Create a ${recommendation.type} chart showing ${columns}. ${recommendation.rationale || ''}`;
-    
-    // Navigate to Ask AI page and send the question
-    setActivePage('ask');
-    handleSendMessage(question);
+    setSelectedRecommendation(recommendation);
+    setActivePage('visualize');
+  };
+
+  const handleOpenSavedVisualization = (saved) => {
+    if (!saved) return;
+    if (saved.type === 'dashboard') {
+      setSavedDashboard(saved);
+      setSelectedRecommendation(null);
+      setActivePage('visualize');
+      return;
+    }
+    setSavedDashboard(null);
+    setSelectedRecommendation({
+      type: saved.type,
+      title: saved.title,
+      x_axis: saved.x_axis || saved.x_col,
+      y_axis: saved.y_axis,
+      y_cols: saved.y_cols || [],
+    });
+    setActivePage('visualize');
+  };
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   if (!authChecked) return null;
-  if (view === 'landing') return <LandingPage onGetStarted={() => setView('auth')} />;
-  if (view === 'auth') return <AuthPage onLogin={handleLogin} onBack={() => setView('landing')} />;
+  if (view === 'landing') return (
+    <LandingPage onGetStarted={() => setView('auth')} theme={theme} onToggleTheme={handleToggleTheme} />
+  );
+  if (view === 'auth') return (
+    <AuthPage onLogin={handleLogin} onBack={() => setView('landing')} theme={theme} onToggleTheme={handleToggleTheme} />
+  );
 
   // ─── Main App ───
   const { sql_query, table_result, chart_base64, stats, insights, prediction } = results || {};
@@ -126,7 +190,15 @@ export default function App() {
   const renderPage = () => {
     switch (activePage) {
       case 'dashboard':
-        return <DashboardPage datasetInfo={datasetInfo} results={results} onNavigate={setActivePage} />;
+        return (
+          <DashboardPage
+            datasetInfo={datasetInfo}
+            results={results}
+            onNavigate={setActivePage}
+            onCreateVisualization={handleCreateVisualization}
+            onOpenSavedVisualization={handleOpenSavedVisualization}
+          />
+        );
 
       case 'ask':
         return (
@@ -163,7 +235,16 @@ export default function App() {
             </div>
             <div className="flex-1 min-h-0 overflow-hidden">
               {datasetInfo
-                ? <VisualBuilder columns={datasetInfo.columns} tableData={fullData} />
+                ? (
+                  <VisualBuilder
+                    columns={datasetInfo.columns}
+                    tableData={fullData}
+                    datasetInfo={datasetInfo}
+                    selectedRecommendation={selectedRecommendation}
+                    savedDashboard={savedDashboard}
+                    clearSavedDashboard={() => setSavedDashboard(null)}
+                  />
+                )
                 : <EmptyPage icon="📊" title="No dataset" desc="Upload a CSV to build visualizations." />}
             </div>
           </div>
@@ -254,6 +335,8 @@ export default function App() {
         datasetInfo={datasetInfo}
         user={user}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       >
         <FileUpload
           onUploadSuccess={handleUploadSuccess}

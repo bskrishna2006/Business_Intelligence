@@ -11,10 +11,37 @@ const VISUALIZATION_ICONS = {
   boxplot: '📦',
 };
 
-export default function DashboardPage({ datasetInfo, results, onNavigate }) {
+const STORAGE_KEY = 'saved_visualizations';
+
+function loadSavedVisualizations() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch {
+        return [];
+    }
+}
+
+function saveSavedVisualizations(items) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+
+function addSavedVisualization(item) {
+    const existing = loadSavedVisualizations();
+    const newItem = {
+        id: `viz-${Date.now()}`,
+        created_at: new Date().toISOString(),
+        ...item,
+    };
+    saveSavedVisualizations([newItem, ...existing]);
+    window.dispatchEvent(new Event('saved-visualizations'));
+}
+
+export default function DashboardPage({ datasetInfo, results, onNavigate, onCreateVisualization, onOpenSavedVisualization }) {
     const { sql_query, table_result, stats, insights } = results || {};
     const [recommendations, setRecommendations] = useState(null);
     const [isLoadingRecs, setIsLoadingRecs] = useState(false);
+    const [savedVisuals, setSavedVisuals] = useState(loadSavedVisualizations());
 
     // Fetch recommendations when dataset changes
     useEffect(() => {
@@ -22,6 +49,23 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
             fetchRecommendations();
         }
     }, [datasetInfo?.columns?.length]);
+
+    useEffect(() => {
+        const handleSavedUpdate = () => setSavedVisuals(loadSavedVisualizations());
+        window.addEventListener('saved-visualizations', handleSavedUpdate);
+        window.addEventListener('storage', handleSavedUpdate);
+        return () => {
+            window.removeEventListener('saved-visualizations', handleSavedUpdate);
+            window.removeEventListener('storage', handleSavedUpdate);
+        };
+    }, []);
+
+    const handleDeleteSaved = (id) => {
+        const updated = savedVisuals.filter((item) => item.id !== id);
+        setSavedVisuals(updated);
+        saveSavedVisualizations(updated);
+        window.dispatchEvent(new Event('saved-visualizations'));
+    };
 
     const fetchRecommendations = async () => {
         setIsLoadingRecs(true);
@@ -56,10 +100,10 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
     };
 
     const quickStats = datasetInfo ? [
-        { label: 'Rows', value: datasetInfo.row_count?.toLocaleString() ?? '—', icon: '📋', accent: 'from-[#d4a574]' },
-        { label: 'Columns', value: datasetInfo.columns?.length ?? '—', icon: '📊', accent: 'from-[#7a9b99]' },
-        { label: 'Results', value: table_result?.length?.toLocaleString() ?? '—', icon: '🔍', accent: 'from-[#c8b4a0]' },
-        { label: 'Insights', value: insights?.length ?? '—', icon: '💡', accent: 'from-[#d4965a]' },
+        { label: 'Rows', value: datasetInfo.row_count?.toLocaleString() ?? '—', icon: '📋', accent: 'from-[var(--color-accent)]' },
+        { label: 'Columns', value: datasetInfo.columns?.length ?? '—', icon: '📊', accent: 'from-[var(--color-accent-secondary)]' },
+        { label: 'Results', value: table_result?.length?.toLocaleString() ?? '—', icon: '🔍', accent: 'from-[var(--color-success)]' },
+        { label: 'Insights', value: insights?.length ?? '—', icon: '💡', accent: 'from-[var(--color-warning)]' },
     ] : [];
 
     return (
@@ -91,7 +135,7 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
                                     <span className="text-2xl group-hover:scale-110 transition-transform">{s.icon}</span>
                                     <span className="text-[11px] font-medium text-[var(--color-text-muted)]">{s.label}</span>
                                 </div>
-                                <p className={`text-3xl font-bold bg-gradient-to-r ${s.accent} to-[#8b7d71] bg-clip-text text-transparent`}>
+                                <p className={`text-3xl font-bold bg-gradient-to-r ${s.accent} to-[var(--color-text-secondary)] bg-clip-text text-transparent`}>
                                     {s.value}
                                 </p>
                             </div>
@@ -117,9 +161,11 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
                                         key={rec.id || idx}
                                         className="card p-5 border-[var(--color-border)] hover:border-[var(--color-accent)] group cursor-pointer transition-all"
                                         onClick={() => {
-                                            const columns = rec.features?.join(', ') || 'the data';
-                                            const question = `Create a ${rec.type} chart showing ${columns}.`;
-                                            onNavigate('ask');
+                                            if (onCreateVisualization) {
+                                                onCreateVisualization(rec);
+                                            } else {
+                                                onNavigate('ask');
+                                            }
                                         }}
                                     >
                                         <div className="flex items-start gap-4">
@@ -136,14 +182,30 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
                                                             {rec.type} chart
                                                         </p>
                                                     </div>
-                                                    {rec.confidence && (
-                                                        <div className="text-right flex-shrink-0">
+                                                    <div className="text-right flex-shrink-0">
+                                                        {rec.confidence && (
                                                             <div className="text-sm font-bold text-[var(--color-accent)]">
                                                                 {Math.round(rec.confidence * 100)}%
                                                             </div>
-                                                            <p className="text-[10px] text-[var(--color-text-muted)]">match</p>
-                                                        </div>
-                                                    )}
+                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={(event) => {
+                                                                event.stopPropagation();
+                                                                addSavedVisualization({
+                                                                    source: 'recommendation',
+                                                                    title: rec.title || `${rec.type} chart`,
+                                                                    type: rec.type,
+                                                                    x_axis: rec.x_axis || null,
+                                                                    y_axis: rec.y_axis || null,
+                                                                    y_cols: rec.y_axis ? [rec.y_axis] : [],
+                                                                });
+                                                            }}
+                                                            className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
+                                                        >
+                                                            Save
+                                                        </button>
+                                                    </div>
                                                 </div>
                                                 <p className="text-xs text-[var(--color-text-secondary)] mb-3 leading-relaxed line-clamp-2">
                                                     {rec.rationale}
@@ -177,6 +239,71 @@ export default function DashboardPage({ datasetInfo, results, onNavigate }) {
                             <p className="text-xs text-[var(--color-text-muted)]">
                                 Analyzing your data to suggest the best charts
                             </p>
+                        </div>
+                    )}
+
+                    {savedVisuals.length > 0 && (
+                        <div className="mb-8">
+                            <div className="flex items-center justify-between mb-5">
+                                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">Saved Visualizations</h3>
+                                <span className="text-xs bg-[var(--color-accent-muted)] text-[var(--color-accent)] px-3 py-1 rounded-full font-medium">
+                                    {savedVisuals.length} saved
+                                </span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {savedVisuals.map((viz) => (
+                                    <div key={viz.id} className="card p-5 border-[var(--color-border)]">
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div>
+                                                <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wide font-semibold">
+                                                    {viz.type === 'dashboard' ? 'dashboard' : (viz.source || 'saved')}
+                                                </p>
+                                                <h4 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                                                    {viz.title || (viz.type === 'dashboard' ? 'AI Dashboard' : `${viz.type} chart`)}
+                                                </h4>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteSaved(viz.id)}
+                                                className="text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                        {viz.type === 'dashboard' ? (
+                                            <div className="flex flex-wrap gap-2 mb-4">
+                                                <span className="text-xs px-2 py-1 rounded-[8px] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
+                                                    {viz.charts?.length || 0} charts
+                                                </span>
+                                                <span className="text-xs px-2 py-1 rounded-[8px] bg-[var(--color-accent-muted)] text-[var(--color-accent)]">
+                                                    dashboard
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-wrap gap-2 mb-4">
+                                                {viz.x_axis && (
+                                                    <span className="text-xs px-2 py-1 rounded-[8px] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
+                                                        X: {viz.x_axis}
+                                                    </span>
+                                                )}
+                                                {(viz.y_axis || (viz.y_cols && viz.y_cols.length > 0)) && (
+                                                    <span className="text-xs px-2 py-1 rounded-[8px] bg-[var(--color-bg-secondary)] text-[var(--color-text-secondary)]">
+                                                        Y: {viz.y_axis || viz.y_cols.join(', ')}
+                                                    </span>
+                                                )}
+                                                <span className="text-xs px-2 py-1 rounded-[8px] bg-[var(--color-accent-muted)] text-[var(--color-accent)]">
+                                                    {viz.type}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => onOpenSavedVisualization && onOpenSavedVisualization(viz)}
+                                            className="btn-secondary px-4 py-2 text-xs font-semibold"
+                                        >
+                                            {viz.type === 'dashboard' ? 'Open Dashboard' : 'Open in Visual Builder'}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
 

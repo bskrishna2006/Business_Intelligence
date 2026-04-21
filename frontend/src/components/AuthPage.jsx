@@ -7,7 +7,7 @@ const HIGHLIGHTS = [
     { icon: '🔒', text: 'Your data stays private' },
 ];
 
-export default function AuthPage({ onLogin, onBack }) {
+export default function AuthPage({ onLogin, onBack, theme, onToggleTheme }) {
     const [tab, setTab] = useState('login');
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
@@ -41,20 +41,20 @@ export default function AuthPage({ onLogin, onBack }) {
     };
 
     return (
-        <div className="min-h-screen    flex bg-[var(--color-bg-primary)]">
+        <div className="min-h-screen flex bg-[var(--color-bg-primary)]">
 
             {/* ── Left Visual Panel ── */}
-            <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-[#f5f2ef] to-[#faf8f6]">
+            <div className="hidden lg:flex w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-[var(--color-bg-secondary)] to-[var(--color-bg-primary)]">
                 {/* Warm organic background */}
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-[-15%] left-[-8%] w-[450px] h-[450px] bg-[#d4a574] opacity-10 rounded-full blur-[140px]" />
-                    <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[#7a9b99] opacity-8 rounded-full blur-[130px]" />
-                    <div className="absolute top-[40%] left-[50%] w-[250px] h-[250px] bg-[#c8b4a0] opacity-6 rounded-full blur-[120px]" />
+                    <div className="absolute top-[-15%] left-[-8%] w-[450px] h-[450px] bg-[var(--color-accent)] opacity-12 rounded-full blur-[140px]" />
+                    <div className="absolute bottom-[-10%] right-[-10%] w-[400px] h-[400px] bg-[var(--color-accent-secondary)] opacity-10 rounded-full blur-[130px]" />
+                    <div className="absolute top-[40%] left-[50%] w-[250px] h-[250px] bg-[var(--color-accent-soft)] opacity-8 rounded-full blur-[120px]" />
                 </div>
 
                 {/* Logo */}
                 <div className="relative z-10 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-[12px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-xs font-bold shadow-md">
+                    <div className="w-9 h-9 rounded-[12px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-xs font-bold shadow-md">
                         ✨
                     </div>
                     <span className="text-[var(--color-text-primary)] font-semibold text-base">InsightAI</span>
@@ -64,7 +64,7 @@ export default function AuthPage({ onLogin, onBack }) {
                 <div className="relative z-10 flex-1 flex flex-col justify-center">
                     <h2 className="text-4xl font-bold text-[var(--color-text-primary)] leading-snug mb-4">
                         Your data,{' '}
-                        <span className="bg-gradient-to-r from-[#d4a574] to-[#7a9b99] bg-clip-text text-transparent">
+                        <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-secondary)] bg-clip-text text-transparent">
                             understood naturally.
                         </span>
                     </h2>
@@ -92,7 +92,7 @@ export default function AuthPage({ onLogin, onBack }) {
                                 <div key={i} className="flex-1 rounded-t-md transition-transform hover:scale-y-110"
                                     style={{
                                         height: `${h}%`,
-                                        background: `linear-gradient(to top, #d4a574${i % 2 === 0 ? 'cc' : '88'}, #7a9b99${i % 2 === 0 ? '66' : '44'})`,
+                                        background: `linear-gradient(to top, rgba(43, 122, 120, ${i % 2 === 0 ? 0.75 : 0.45}), rgba(47, 95, 143, ${i % 2 === 0 ? 0.5 : 0.3}))`,
                                     }}
                                 />
                             ))}
@@ -113,12 +113,17 @@ export default function AuthPage({ onLogin, onBack }) {
             {/* ── Right Form Panel ── */}
             <div className="flex-1 flex items-center justify-center px-6 py-12 relative">
                 {/* Subtle warm glow */}
-                <div className="absolute top-1/3 right-0 w-[300px] h-[300px] bg-[#d4a574] opacity-4 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute top-1/3 right-0 w-[300px] h-[300px] bg-[var(--color-accent)] opacity-8 rounded-full blur-[100px] pointer-events-none" />
+
+                <button onClick={onToggleTheme} className="theme-toggle absolute top-6 right-6">
+                    <span>{theme === 'dark' ? 'Night' : 'Light'}</span>
+                    <span className="text-base leading-none">{theme === 'dark' ? '🌙' : '☀️'}</span>
+                </button>
 
                 <div className="w-full max-w-sm relative z-10">
                     {/* Mobile logo */}
-                    <div className="lg:hidden flex items-center gap-2.5 mb-8">
-                        <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-xs font-bold">✨</div>
+                        <div className="lg:hidden flex items-center gap-2.5 mb-8">
+                        <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-xs font-bold">✨</div>
                         <span className="text-[var(--color-text-primary)] font-semibold text-sm">InsightAI</span>
                     </div>
 
@@ -195,9 +200,9 @@ export default function AuthPage({ onLogin, onBack }) {
                         </div>
 
                         {error && (
-                            <div className="flex items-start gap-3 px-4 py-3 rounded-[11px] bg-[#c85a54]/8 border border-[#c85a54]/20">
-                                <span className="text-[#c85a54] mt-0.5 text-lg flex-shrink-0">⚠</span>
-                                <p className="text-xs text-[#c85a54] font-medium">{error}</p>
+                            <div className="flex items-start gap-3 px-4 py-3 rounded-[11px] bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/25">
+                                <span className="text-[var(--color-danger)] mt-0.5 text-lg flex-shrink-0">⚠</span>
+                                <p className="text-xs text-[var(--color-danger)] font-medium">{error}</p>
                             </div>
                         )}
 

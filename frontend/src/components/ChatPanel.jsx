@@ -51,7 +51,7 @@ export default function ChatPanel({ messages, onSendMessage, isLoading, hasDatas
           onClick={() => setMode('visualize')}
           className={`px-4 py-2 rounded-[10px] text-sm font-medium transition-all ${
             mode === 'visualize'
-              ? 'bg-[#7a9b99] text-white shadow-md'
+              ? 'bg-[var(--color-accent-secondary)] text-white shadow-md'
               : 'bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
           }`}
         >
@@ -101,7 +101,7 @@ export default function ChatPanel({ messages, onSendMessage, isLoading, hasDatas
               <div
                 className={`max-w-[85%] rounded-[14px] px-4 py-3 text-sm leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-gradient-to-br from-[#d4a574] to-[#ddb885] text-white rounded-br-[4px] shadow-md'
+                    ? 'bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-soft)] text-white rounded-br-[4px] shadow-md'
                     : 'card border-[var(--color-border-soft)] text-[var(--color-text-primary)]'
                 }`}
               >

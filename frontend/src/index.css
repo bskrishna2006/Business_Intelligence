@@ -1,55 +1,96 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ── Design Tokens — Warm, Human-Centered Aesthetic ── */
+/* ── Design Tokens — Business Intelligence Theme ── */
 :root {
-  /* Backgrounds: Warm neutrals and creams */
-  --color-bg-primary: #faf8f6;
-  --color-bg-secondary: #f5f2ef;
+  /* Backgrounds: crisp, data-focused surfaces */
+  --color-bg-primary: #f4f6f9;
+  --color-bg-secondary: #edf1f6;
   --color-bg-card: #ffffff;
-  --color-bg-elevated: #fffbf7;
-  --color-bg-glass: rgba(255, 251, 247, 0.9);
-  
-  /* Accents: Warm, inviting colors */
-  --color-accent: #d4a574;
-  --color-accent-soft: #ddb885;
-  --color-accent-muted: rgba(212, 165, 116, 0.08);
-  --color-accent-secondary: #7a9b99;
-  --color-accent-secondary-soft: rgba(122, 155, 153, 0.1);
-  
-  /* Status colors: Warm versions */
-  --color-success: #6b9b7e;
-  --color-warning: #d4965a;
-  --color-danger: #c85a54;
-  
-  /* Text: Warm grays */
-  --color-text-primary: #3d3531;
-  --color-text-secondary: #8b8078;
-  --color-text-muted: #a9a09a;
-  
-  /* Borders: Soft, subtle */
-  --color-border: rgba(61, 53, 49, 0.06);
-  --color-border-hover: rgba(61, 53, 49, 0.12);
-  --color-border-soft: rgba(212, 165, 116, 0.12);
-  
-  /* Font stack: Warm typography */
-  --font-sans: 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
-  --font-display: 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', sans-serif;
+  --color-bg-elevated: #f8fafc;
+  --color-bg-glass: rgba(255, 255, 255, 0.72);
+  --color-bg-gradient: radial-gradient(900px 520px at 8% -10%, rgba(43, 122, 120, 0.12), transparent 60%),
+    radial-gradient(780px 460px at 95% -12%, rgba(47, 95, 143, 0.12), transparent 55%),
+    linear-gradient(180deg, #f7f9fc 0%, #edf2f8 100%);
+
+  /* Accents: calm teal + steel blue */
+  --color-accent: #2b7a78;
+  --color-accent-soft: #3aa29a;
+  --color-accent-muted: rgba(43, 122, 120, 0.12);
+  --color-accent-secondary: #2f5f8f;
+  --color-accent-secondary-soft: rgba(47, 95, 143, 0.12);
+
+  /* Status colors */
+  --color-success: #2f9c7a;
+  --color-warning: #d18b3b;
+  --color-danger: #cf4b4b;
+
+  /* Text: cool neutrals */
+  --color-text-primary: #1c2733;
+  --color-text-secondary: #4b5b6b;
+  --color-text-muted: #7b8797;
+
+  /* Borders */
+  --color-border: rgba(28, 39, 51, 0.08);
+  --color-border-hover: rgba(28, 39, 51, 0.16);
+  --color-border-soft: rgba(47, 95, 143, 0.14);
+
+  /* Typography */
+  --font-sans: 'Source Sans 3', 'Segoe UI', sans-serif;
+  --font-display: 'Space Grotesk', 'Segoe UI', sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --color-bg-primary: #0f1720;
+  --color-bg-secondary: #121c27;
+  --color-bg-card: #142131;
+  --color-bg-elevated: #172434;
+  --color-bg-glass: rgba(20, 33, 49, 0.7);
+  --color-bg-gradient: radial-gradient(900px 520px at 8% -10%, rgba(83, 198, 183, 0.18), transparent 60%),
+    radial-gradient(780px 460px at 95% -12%, rgba(106, 163, 255, 0.18), transparent 55%),
+    linear-gradient(180deg, #0b121a 0%, #101a25 100%);
+
+  --color-accent: #53c6b7;
+  --color-accent-soft: #72d6c9;
+  --color-accent-muted: rgba(83, 198, 183, 0.16);
+  --color-accent-secondary: #6aa3ff;
+  --color-accent-secondary-soft: rgba(106, 163, 255, 0.16);
+
+  --color-success: #44d1a0;
+  --color-warning: #e6b35b;
+  --color-danger: #ff6b6b;
+
+  --color-text-primary: #e6edf5;
+  --color-text-secondary: #a7b2c2;
+  --color-text-muted: #7b8797;
+
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.16);
+  --color-border-soft: rgba(106, 163, 255, 0.18);
 }
 
 /* ── Base ── */
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgba(212, 165, 116, 0.3) transparent;
+    scrollbar-color: var(--color-accent-soft) transparent;
   }
 
   body {
     font-family: var(--font-sans);
-    background: var(--color-bg-primary);
+    background: var(--color-bg-gradient);
     color: var(--color-text-primary);
     min-height: 100vh;
     overflow: hidden;
-    letter-spacing: -0.3px;
+    letter-spacing: -0.2px;
   }
 
   #root {
@@ -93,7 +134,7 @@
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(61, 53, 49, 0.05);
+  box-shadow: 0 2px 10px rgba(15, 23, 32, 0.08);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
@@ -111,19 +152,19 @@
   font-size: 0.9rem;
   letter-spacing: -0.2px;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(212, 165, 116, 0.25);
+  box-shadow: 0 4px 14px rgba(43, 122, 120, 0.3);
   border: none;
   cursor: pointer;
 
   &:hover {
     background: var(--color-accent-soft);
-    box-shadow: 0 6px 16px rgba(212, 165, 116, 0.35);
+    box-shadow: 0 8px 18px rgba(43, 122, 120, 0.35);
     transform: translateY(-2px);
   }
 
   &:active {
     transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(212, 165, 116, 0.2);
+    box-shadow: 0 2px 8px rgba(43, 122, 120, 0.25);
   }
 
   &:disabled {
@@ -190,6 +231,26 @@
   }
 }
 
+@utility theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--color-border-hover);
+    color: var(--color-text-primary);
+    transform: translateY(-1px);
+  }
+}
+
 /* ── Animations ── */
 @keyframes fade-in {
   from {
@@ -252,4 +313,23 @@
 
 .animate-slide-up {
   animation: slide-up 0.35s ease-out forwards;
+}
+
+@keyframes manual-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(83, 198, 183, 0.0);
+    background: transparent;
+  }
+  40% {
+    box-shadow: 0 0 0 3px rgba(83, 198, 183, 0.25);
+    background: var(--color-accent-muted);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(83, 198, 183, 0.0);
+    background: transparent;
+  }
+}
+
+.manual-flash {
+  animation: manual-flash 0.7s ease-out;
 }

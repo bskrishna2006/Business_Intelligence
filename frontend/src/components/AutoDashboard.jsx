@@ -2,22 +2,59 @@ import { useState, useEffect } from 'react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter,
   PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label
 } from 'recharts';
 
-const COLORS = ['#d4a574', '#7a9b99', '#c8b4a0', '#d4965a', '#8b7d71', '#a9a09a'];
+const COLORS = [
+  'var(--color-accent)',
+  'var(--color-accent-secondary)',
+  'var(--color-success)',
+  'var(--color-warning)',
+  'var(--color-text-secondary)',
+  'var(--color-text-muted)'
+];
 const ICON_MAP = {
   bar: '📊', line: '📈', area: '🏔️', scatter: '🔹', pie: '🥧', histogram: '📉'
 };
 
-export default function AutoDashboard({ tableData, columns, datasetInfo, onClose }) {
+const STORAGE_KEY = 'saved_visualizations';
+
+function loadSavedVisualizations() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSavedVisualizations(items) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  window.dispatchEvent(new Event('saved-visualizations'));
+}
+
+export default function AutoDashboard({
+  tableData,
+  columns,
+  datasetInfo,
+  initialCharts,
+  initialSummary,
+  readOnly,
+  onClose,
+}) {
   const [dashboards, setDashboards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (initialCharts && Array.isArray(initialCharts)) {
+      setDashboards(initialCharts);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
     fetchAutoDashboard();
-  }, [tableData?.length]);
+  }, [tableData?.length, initialCharts]);
 
   const fetchAutoDashboard = async () => {
     if (!tableData || tableData.length === 0 || !columns) {
@@ -81,13 +118,24 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
 
     const tooltipStyle = {
       contentStyle: {
-        background: '#faf8f6',
-        border: '1px solid #e0d9d1',
+        background: 'var(--color-bg-card)',
+        border: '1px solid var(--color-border)',
         borderRadius: '8px',
-        color: '#3d3531',
+        color: 'var(--color-text-primary)',
         fontSize: '12px',
       },
     };
+    const axisTick = { fill: 'var(--color-text-muted)', fontSize: 11 };
+    const formatAxisLabel = (label) => {
+      if (label == null) return '';
+      const text = String(label);
+      return text.length > 12 ? `${text.slice(0, 12)}…` : text;
+    };
+    const formatNumber = (value) => {
+      if (value == null || Number.isNaN(Number(value))) return value;
+      return Number(value).toLocaleString();
+    };
+    const tooltipFormatter = (value, name) => [formatNumber(value), name];
 
     try {
       switch (chart.type) {
@@ -96,9 +144,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <Tooltip {...tooltipStyle} />
+                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+                </XAxis>
+                <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                </YAxis>
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                 <Legend />
                 {chart.series && chart.series.map((s, i) => (
                   <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[8, 8, 0, 0]} />
@@ -112,9 +164,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <Tooltip {...tooltipStyle} />
+                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+                </XAxis>
+                <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                </YAxis>
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                 <Legend />
                 {chart.series && chart.series.map((s, i) => (
                   <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
@@ -128,9 +184,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <Tooltip {...tooltipStyle} />
+                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+                </XAxis>
+                <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                </YAxis>
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                 <Legend />
                 {chart.series && chart.series.map((s, i) => (
                   <Area
@@ -151,9 +211,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             <ResponsiveContainer width="100%" height={280}>
               <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <YAxis dataKey={chart.y_axis} name={chart.y_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <Tooltip {...tooltipStyle} />
+                <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+                </XAxis>
+                <YAxis dataKey={chart.y_axis} name={chart.y_axis} tick={axisTick} tickFormatter={formatNumber}>
+                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                </YAxis>
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                 <Scatter data={chart.data} fill={COLORS[0]} />
               </ScatterChart>
             </ResponsiveContainer>
@@ -170,13 +234,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${formatAxisLabel(name)} ${(percent * 100).toFixed(0)}%`}
                 >
                   {chart.data.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip {...tooltipStyle} />
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
               </PieChart>
             </ResponsiveContainer>
           );
@@ -186,9 +250,13 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             <ResponsiveContainer width="100%" height={280}>
               <BarChart data={chart.data}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#8b8078' }} />
-                <Tooltip {...tooltipStyle} />
+                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+                </XAxis>
+                <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                  <Label value={chart.y_axis || 'Count'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                </YAxis>
+                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                 <Bar dataKey={chart.y_axis} fill={COLORS[0]} radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -215,12 +283,33 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
             Auto-generated visualizations showing relationships in your data
           </p>
         </div>
-        <button
-          onClick={onClose}
-          className="px-4 py-2 text-sm font-medium rounded-[10px] bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all"
-        >
-          ← Back to Builder
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const existing = loadSavedVisualizations();
+              const newItem = {
+                id: `dash-${Date.now()}`,
+                created_at: new Date().toISOString(),
+                source: readOnly ? 'saved' : 'auto',
+                type: 'dashboard',
+                title: 'AI Dashboard',
+                charts: dashboards,
+                summary: initialSummary || null,
+              };
+              persistSavedVisualizations([newItem, ...existing]);
+            }}
+            className="px-3 py-2 text-xs font-semibold rounded-[10px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
+          >
+            Save Dashboard
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium rounded-[10px] bg-[var(--color-bg-primary)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-all"
+          >
+            ← Back to Builder
+          </button>
+        </div>
       </div>
 
       {/* Content Area */}
@@ -279,6 +368,26 @@ export default function AutoDashboard({ tableData, columns, datasetInfo, onClose
                         </p>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const existing = loadSavedVisualizations();
+                        const newItem = {
+                          id: `viz-${Date.now()}`,
+                          created_at: new Date().toISOString(),
+                          source: readOnly ? 'saved' : 'auto',
+                          title: chart.title || `${chart.type} chart`,
+                          type: chart.type,
+                          x_axis: chart.x_axis || null,
+                          y_axis: chart.y_axis || null,
+                          y_cols: chart.y_axis ? [chart.y_axis] : [],
+                        };
+                        persistSavedVisualizations([newItem, ...existing]);
+                      }}
+                      className="text-[10px] px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
+                    >
+                      Save
+                    </button>
                     {chart.confidence && (
                       <div className="text-right">
                         <div className="text-sm font-bold text-[var(--color-accent)]">

@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   },
 ];
 
-export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onLogout, children }) {
+export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onLogout, children, theme, onToggleTheme }) {
   const initials = user?.name
     ? user.name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
     : '?';
@@ -30,7 +30,7 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
       {/* Brand with warm gradient */}
       <div className="px-5 py-5 border-b border-[var(--color-border-soft)]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[11px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-sm font-bold shadow-md">
+          <div className="w-9 h-9 rounded-[11px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-sm font-bold shadow-md">
             ✨
           </div>
           <div>
@@ -61,7 +61,7 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
                 title={isLocked ? 'Upload data first' : item.label}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-sm font-medium transition-all duration-200 group
                   ${isActive
-                    ? 'bg-gradient-to-r from-[#d4a574] to-[#ddb885] text-white shadow-md'
+                    ? 'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-soft)] text-white shadow-md'
                     : isLocked
                       ? 'text-[var(--color-text-muted)] opacity-35 cursor-not-allowed'
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] hover:shadow-sm'
@@ -110,9 +110,18 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
 
       {/* User section with warm styling */}
       <div className="px-3 py-4 border-t border-[var(--color-border-soft)] bg-[var(--color-bg-primary)]">
+        <div className="flex items-center justify-between px-2 mb-3">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+            Theme
+          </span>
+          <button onClick={onToggleTheme} className="theme-toggle">
+            <span>{theme === 'dark' ? 'Night' : 'Light'}</span>
+            <span className="text-base leading-none">{theme === 'dark' ? '🌙' : '☀️'}</span>
+          </button>
+        </div>
         {user ? (
           <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[#d4a574] to-[#7a9b99] flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
