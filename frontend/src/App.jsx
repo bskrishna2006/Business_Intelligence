@@ -10,6 +10,8 @@ import VisualBuilder from './components/VisualBuilder';
 import DataTable from './components/DataTable';
 import InsightsPanel from './components/InsightsPanel';
 import StatsPanel from './components/StatsPanel';
+import DataCleaningModal from './components/DataCleaningModal';
+import { Broom } from '@phosphor-icons/react';
 
 function authFetch(url, options = {}) {
   const token = localStorage.getItem('auth_token');
@@ -37,6 +39,7 @@ export default function App() {
   const [activePage, setActivePage] = useState('dashboard');
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [savedDashboard, setSavedDashboard] = useState(null);
+  const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
 
   const [datasetInfo, setDatasetInfo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -44,6 +47,14 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [fullData, setFullData] = useState(null);
+  const [queryHistory, setQueryHistory] = useState(() => {
+    try {
+      const raw = localStorage.getItem('query_history');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -98,6 +109,7 @@ export default function App() {
     setUser(null); setView('landing');
     setDatasetInfo(null); setMessages([]);
     setResults(null); setFullData(null);
+    setQueryHistory([]);
     setActivePage('dashboard');
   };
 
@@ -126,6 +138,17 @@ export default function App() {
   const handleSendMessage = async (question, messageData = {}) => {
     setMessages((prev) => [...prev, { role: 'user', content: question }]);
     setIsLoading(true);
+
+    // Persist query to history (deduplicate, cap at 30)
+    setQueryHistory((prev) => {
+      const next = [
+        { question, timestamp: Date.now() },
+        ...prev.filter((h) => h.question !== question),
+      ].slice(0, 30);
+      try { localStorage.setItem('query_history', JSON.stringify(next)); } catch {}
+      return next;
+    });
+
     try {
       const res = await authFetch('/api/ask', {
         method: 'POST',
@@ -185,7 +208,7 @@ export default function App() {
   );
 
   // ─── Main App ───
-  const { sql_query, table_result, chart_base64, stats, insights, prediction } = results || {};
+  const { sql_query, table_result, stats, insights, prediction } = results || {};
 
   const renderPage = () => {
     switch (activePage) {
@@ -210,7 +233,17 @@ export default function App() {
                 <p className="text-[10px] text-[var(--color-text-muted)]">Query your data in plain English</p>
               </div>
               <div className="flex-1 min-h-0">
-                <ChatPanel messages={messages} onSendMessage={handleSendMessage} isLoading={isLoading} hasDataset={!!datasetInfo} />
+                <ChatPanel
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                hasDataset={!!datasetInfo}
+                queryHistory={queryHistory}
+                onClearHistory={() => {
+                  setQueryHistory([]);
+                  try { localStorage.removeItem('query_history'); } catch {}
+                }}
+              />
               </div>
             </div>
             {/* Results column */}
@@ -260,17 +293,54 @@ export default function App() {
                   {table_result?.length
                     ? `Showing ${table_result.length} query results`
                     : fullData?.length
-                      ? `${fullData.length.toLocaleString()} rows loaded`
+                      ? `${fullData.length.toLocaleString()} rows loaded — click any column header to profile it`
                       : 'No data'}
                 </p>
               </div>
+              {datasetInfo && (
+                <button
+                  onClick={() => setIsCleanModalOpen(true)}
+                  className="btn-secondary px-3.5 py-1.5 text-xs font-semibold cursor-pointer flex items-center gap-1.5"
+                >
+                  <Broom size={14} className="text-[var(--color-accent)]" />
+                  <span>Clean Dataset</span>
+                </button>
+              )}
             </div>
-            <div className="flex-1 overflow-auto p-4">
-              <DataTable data={table_result?.length ? table_result : fullData} />
-              {!table_result?.length && !fullData?.length && (
+            <div className="flex-1 min-h-0 overflow-hidden p-4 flex">
+              {(table_result?.length || fullData?.length) ? (
+                <DataTable data={table_result?.length ? table_result : fullData} />
+              ) : (
                 <EmptyPage icon="📋" title="No data" desc="Upload a CSV or run a query." />
               )}
             </div>
+
+            <DataCleaningModal
+              isOpen={isCleanModalOpen}
+              onClose={() => setIsCleanModalOpen(false)}
+              authFetch={authFetch}
+              onCleanSuccess={async (cleanedData) => {
+                setDatasetInfo((prev) => ({
+                  ...prev,
+                  columns: cleanedData.columns,
+                  row_count: cleanedData.row_count,
+                  sample_rows: cleanedData.sample_rows,
+                  schema: cleanedData.schema,
+                }));
+
+                try {
+                  const tableRes = await authFetch('/api/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: 'Show all data' }),
+                  });
+                  const result = await tableRes.json();
+                  setFullData(result.table_result || cleanedData.sample_rows);
+                } catch {
+                  setFullData(cleanedData.sample_rows);
+                }
+              }}
+            />
           </div>
         );
 

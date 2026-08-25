@@ -1,22 +1,24 @@
+import { 
+  SquaresFour, 
+  ChatTeardropText, 
+  ChartBar, 
+  Table, 
+  Lightbulb, 
+  Database, 
+  Sparkle, 
+  Moon, 
+  Sun,
+  SignOut,
+  LockKey
+} from '@phosphor-icons/react';
+
 const NAV_ITEMS = [
-  {
-    id: 'dashboard', label: 'Dashboard', icon: '📊'
-  },
-  {
-    id: 'ask', label: 'Ask AI', icon: '💬'
-  },
-  {
-    id: 'visualize', label: 'Visualize', icon: '📈'
-  },
-  {
-    id: 'data', label: 'Browse', icon: '📋'
-  },
-  {
-    id: 'insights', label: 'Insights', icon: '✨'
-  },
-  {
-    id: 'sql', label: 'SQL', icon: '💾'
-  },
+  { id: 'dashboard', label: 'Dashboard', icon: SquaresFour },
+  { id: 'ask', label: 'Ask AI', icon: ChatTeardropText },
+  { id: 'visualize', label: 'Visualize', icon: ChartBar },
+  { id: 'data', label: 'Browse', icon: Table },
+  { id: 'insights', label: 'Insights', icon: Lightbulb },
+  { id: 'sql', label: 'SQL Query', icon: Database },
 ];
 
 export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onLogout, children, theme, onToggleTheme }) {
@@ -25,81 +27,81 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
     : '?';
 
   return (
-    <aside className="w-60 h-screen flex flex-col bg-[var(--color-bg-secondary)] border-r border-[var(--color-border-soft)] shrink-0">
+    <aside className="w-60 h-screen flex flex-col bg-[var(--color-bg-secondary)] border-r border-[var(--color-border)] shrink-0">
 
-      {/* Brand with warm gradient */}
-      <div className="px-5 py-5 border-b border-[var(--color-border-soft)]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-[11px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-sm font-bold shadow-md">
-            ✨
+      {/* Brand logo & title */}
+      <div className="px-5 py-5 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8.5 h-8.5 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white shadow-md shadow-[var(--color-accent)]/15">
+            <Sparkle size={16} weight="fill" />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-[var(--color-text-primary)]">InsightAI</h1>
-            <p className="text-[10px] text-[var(--color-text-muted)] font-[450]">Data Explorer</p>
+            <h1 className="text-sm font-extrabold text-[var(--color-text-primary)] tracking-tight">InsightAI</h1>
+            <p className="text-[10px] text-[var(--color-text-muted)] font-semibold">Data Explorer</p>
           </div>
         </div>
       </div>
 
-      {/* Upload section */}
-      <div className="border-b border-[var(--color-border-soft)]">
+      {/* Upload area */}
+      <div className="border-b border-[var(--color-border)]">
         {children}
       </div>
 
-      {/* Warm Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3">
-          Pages
-        </p>
-        <div className="space-y-1.5">
-          {NAV_ITEMS.map((item) => {
-            const isActive = activePage === item.id;
-            const isLocked = item.id !== 'dashboard' && !datasetInfo;
-            return (
-              <button
-                key={item.id}
-                onClick={() => !isLocked && onNavigate(item.id)}
-                title={isLocked ? 'Upload data first' : item.label}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-sm font-medium transition-all duration-200 group
-                  ${isActive
-                    ? 'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-soft)] text-white shadow-md'
-                    : isLocked
-                      ? 'text-[var(--color-text-muted)] opacity-35 cursor-not-allowed'
-                      : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)] hover:shadow-sm'
-                  }`}
-              >
-                <span className="text-lg">{item.icon}</span>
-                <span className="flex-1 text-left">{item.label}</span>
-                {isLocked && (
-                  <svg className="w-3.5 h-3.5 opacity-40" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                )}
-              </button>
-            );
-          })}
+      {/* Navigation list */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+        <div>
+          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3.5">
+            WORKSPACE
+          </p>
+          <div className="space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activePage === item.id;
+              const isLocked = item.id !== 'dashboard' && !datasetInfo;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => !isLocked && onNavigate(item.id)}
+                  disabled={isLocked}
+                  title={isLocked ? 'Upload a dataset first' : item.label}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 group cursor-pointer
+                    ${isActive
+                      ? 'bg-[var(--color-accent)] text-white shadow-sm shadow-[var(--color-accent)]/15'
+                      : isLocked
+                        ? 'text-[var(--color-text-muted)] opacity-40 cursor-not-allowed'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-primary)] hover:text-[var(--color-text-primary)]'
+                    }`}
+                >
+                  <Icon size={16} weight={isActive ? "fill" : "regular"} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {isLocked && <LockKey size={12} className="opacity-60" />}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Dataset info with warm styling */}
+        {/* Dataset metadata card */}
         {datasetInfo && (
-          <div className="mt-6 pt-4 border-t border-[var(--color-border-soft)]">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3">
-              Current Dataset
+          <div className="pt-4 border-t border-[var(--color-border-soft)]">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] px-2 mb-3">
+              CURRENT DATASET
             </p>
-            <div className="card px-3.5 py-3 border-[var(--color-border-soft)] mx-0">
-              <div className="flex gap-2 text-[11px] text-[var(--color-text-secondary)] mb-3 font-medium">
+            <div className="card px-3.5 py-3 border-[var(--color-border-soft)] bg-[var(--color-bg-card)] mx-0 rounded-lg space-y-2.5">
+              <div className="flex gap-2 text-[10px] text-[var(--color-text-secondary)] font-semibold">
                 <span>{datasetInfo.row_count?.toLocaleString()} rows</span>
-                <span className="text-[var(--color-text-muted)]">·</span>
+                <span className="text-[var(--color-text-muted)]">•</span>
                 <span>{datasetInfo.columns?.length} cols</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
-                {datasetInfo.columns?.slice(0, 5).map((col) => (
-                  <span key={col} className="text-[9px] px-2 py-1 rounded-[8px] bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-mono truncate max-w-[70px] border border-[var(--color-border-soft)]">
+              <div className="flex flex-wrap gap-1">
+                {datasetInfo.columns?.slice(0, 4).map((col) => (
+                  <span key={col} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-mono truncate max-w-[85px] border border-[var(--color-border-soft)]">
                     {col}
                   </span>
                 ))}
-                {datasetInfo.columns?.length > 5 && (
-                  <span className="text-[9px] px-2 py-1 rounded-[8px] bg-[var(--color-bg-primary)] text-[var(--color-text-muted)]">
-                    +{datasetInfo.columns.length - 5}
+                {datasetInfo.columns?.length > 4 && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-secondary)] text-[var(--color-text-muted)] font-bold">
+                    +{datasetInfo.columns.length - 4} more
                   </span>
                 )}
               </div>
@@ -108,39 +110,39 @@ export default function Sidebar({ activePage, onNavigate, datasetInfo, user, onL
         )}
       </nav>
 
-      {/* User section with warm styling */}
-      <div className="px-3 py-4 border-t border-[var(--color-border-soft)] bg-[var(--color-bg-primary)]">
-        <div className="flex items-center justify-between px-2 mb-3">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
-            Theme
+      {/* User settings / Sign out */}
+      <div className="px-3 py-4 border-t border-[var(--color-border)] bg-[var(--color-bg-primary)]/50">
+        <div className="flex items-center justify-between px-2 mb-3.5">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+            APPEARANCE
           </span>
-          <button onClick={onToggleTheme} className="theme-toggle">
-            <span>{theme === 'dark' ? 'Night' : 'Light'}</span>
-            <span className="text-base leading-none">{theme === 'dark' ? '🌙' : '☀️'}</span>
+          <button 
+            onClick={onToggleTheme} 
+            className="theme-toggle flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[10px] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] transition-all cursor-pointer font-bold"
+          >
+            {theme === 'dark' ? <Moon size={11} /> : <Sun size={11} />}
+            <span className="capitalize">{theme === 'dark' ? 'dark' : 'light'}</span>
           </button>
         </div>
         {user ? (
           <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-[9px] bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] flex items-center justify-center text-white text-[11px] font-bold shrink-0 shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white text-[11px] font-extrabold shrink-0 shadow-sm shadow-[var(--color-accent)]/15">
               {initials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-[var(--color-text-primary)] truncate">{user.name}</p>
-              <p className="text-[10px] text-[var(--color-text-muted)] truncate">{user.email}</p>
+              <p className="text-xs font-bold text-[var(--color-text-primary)] truncate leading-none mb-0.5">{user.name}</p>
+              <p className="text-[9px] text-[var(--color-text-muted)] truncate font-semibold leading-none">{user.email}</p>
             </div>
             <button
               onClick={onLogout}
               title="Sign out"
-              className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 transition-all p-2 rounded-[8px] shrink-0"
+              className="text-[var(--color-text-secondary)] hover:text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 transition-all p-2 rounded-lg shrink-0 cursor-pointer border border-transparent hover:border-[var(--color-danger)]/10"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                <polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
+              <SignOut size={14} />
             </button>
           </div>
         ) : (
-          <p className="text-[10px] text-[var(--color-text-muted)] text-center font-medium">Powered by Groq</p>
+          <p className="text-[9px] text-[var(--color-text-muted)] text-center font-bold">Powered by Groq</p>
         )}
       </div>
     </aside>

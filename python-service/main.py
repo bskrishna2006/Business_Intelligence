@@ -80,6 +80,101 @@ class AutoDashboardRequest(BaseModel):
     query: str = "SELECT * FROM data"
 
 
+class CleanDataRequest(BaseModel):
+    db_path: str
+    impute_numeric: str = "mean"  # "mean", "median", "mode", "zero", "none"
+    fill_text: str = "N/A"
+    drop_duplicates: bool = True
+    drop_empty_cols: bool = True
+
+
+# ─── POST /clean-data ───
+@app.post("/clean-data")
+async def clean_data(request: CleanDataRequest):
+    """
+    Data Cleaning & Preprocessing Suite:
+    - Fills numeric missing values (mean, median, mode, or zero)
+    - Replaces missing text entries with fill_text ("N/A")
+    - Removes exact duplicate rows
+    - Drops completely empty columns
+    - Re-writes clean table into SQLite database
+    """
+    db_path = request.db_path
+    if not os.path.exists(db_path):
+        raise HTTPException(status_code=404, detail="Database file not found")
+
+    import sqlite3
+    try:
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql("SELECT * FROM data", conn)
+        initial_rows = len(df)
+        initial_cols = len(df.columns)
+
+        # 1. Drop completely empty columns
+        if request.drop_empty_cols:
+            df = df.dropna(how="all", axis=1)
+
+        # 2. Remove duplicate rows
+        if request.drop_duplicates:
+            df = df.drop_duplicates()
+
+        # 3. Numeric imputation
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        for col in numeric_cols:
+            if df[col].isnull().any():
+                if request.impute_numeric == "mean":
+                    val = df[col].mean()
+                elif request.impute_numeric == "median":
+                    val = df[col].median()
+                elif request.impute_numeric == "zero":
+                    val = 0
+                elif request.impute_numeric == "mode":
+                    mode_vals = df[col].mode()
+                    val = mode_vals.iloc[0] if not mode_vals.empty else 0
+                else:
+                    val = None
+
+                if val is not None:
+                    df[col] = df[col].fillna(val)
+
+        # 4. Text / Categorical filling
+        text_cols = df.select_dtypes(include=['object']).columns
+        for col in text_cols:
+            if df[col].isnull().any():
+                df[col] = df[col].fillna(request.fill_text)
+
+        # Re-write cleaned dataframe to SQLite
+        df.to_sql('data', conn, if_exists='replace', index=False)
+
+        # Fetch updated schema and sample rows
+        cursor = conn.execute("PRAGMA table_info(data)")
+        columns_info = cursor.fetchall()
+        schema = {col_info[1]: col_info[2] for col_info in columns_info}
+        columns = list(schema.keys())
+
+        sample_df = df.head(5)
+        sample_rows = sample_df.to_dict(orient='records')
+        row_count = len(df)
+        conn.close()
+
+        print(f"🧹 Cleaned dataset ({db_path}): {initial_rows} -> {row_count} rows, {initial_cols} -> {len(columns)} cols")
+
+        return {
+            "db_path": db_path,
+            "table_name": "data",
+            "columns": columns,
+            "schema": schema,
+            "sample_rows": sample_rows,
+            "row_count": row_count,
+            "cleaned_summary": {
+                "rows_removed": initial_rows - row_count,
+                "cols_removed": initial_cols - len(columns),
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Data cleaning failed: {str(e)}")
+
+
 # ─── POST /upload ───
 @app.post("/upload")
 async def upload_csv(file: UploadFile = File(...)):

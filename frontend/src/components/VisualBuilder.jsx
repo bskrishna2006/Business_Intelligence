@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import AutoDashboard from './AutoDashboard';
+import { createChartFileName, downloadSvgAsPng } from '../utils/exportUtils';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter,
   PieChart, Pie, Cell,
@@ -20,27 +21,11 @@ const COLORS = [
   'var(--color-accent-secondary)',
   'var(--color-success)',
   'var(--color-warning)',
-  'var(--color-text-secondary)',
-  'var(--color-text-muted)',
-  'var(--color-accent-soft)',
-  'var(--color-accent-secondary-soft)'
+  '#e16a86',
+  '#f0b86b',
+  '#7b6fd6',
+  '#3d77b0'
 ];
-
-const STORAGE_KEY = 'saved_visualizations';
-
-function loadSavedVisualizations() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistSavedVisualizations(items) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new Event('saved-visualizations'));
-}
 
 export default function VisualBuilder({
   columns,
@@ -55,11 +40,12 @@ export default function VisualBuilder({
   const [yCols, setYCols] = useState([]);
   const [autoRecs, setAutoRecs] = useState([]);
   const [isLoadingAuto, setIsLoadingAuto] = useState(false);
-  const [dragging, setDragging] = useState(false);
   const [showAutoDashboard, setShowAutoDashboard] = useState(false);
   const [manualPulse, setManualPulse] = useState(false);
   const [saveNotice, setSaveNotice] = useState('');
+  const [pendingDownload, setPendingDownload] = useState(null);
   const manualSectionRef = useRef(null);
+  const chartContainerRef = useRef(null);
   const pulseTimeoutRef = useRef(null);
   const saveTimeoutRef = useRef(null);
 
@@ -127,6 +113,62 @@ export default function VisualBuilder({
       applyRecommendation(selectedRecommendation);
     }
   }, [selectedRecommendation]);
+
+  useEffect(() => {
+    if (!pendingDownload) {
+      return;
+    }
+
+    if (!xCol) {
+      return;
+    }
+
+    let retries = 0;
+    let rafId;
+    let timeoutId;
+
+    const tryDownload = () => {
+      const svg = chartContainerRef.current?.querySelector('svg');
+      if (!svg) {
+        if (retries < 30) {
+          retries++;
+          rafId = requestAnimationFrame(tryDownload);
+        } else {
+          setPendingDownload(null);
+          setSaveNotice('Download failed');
+        }
+        return;
+      }
+
+      // SVG is now in the DOM. Wait a moment for Recharts to update/render completely
+      timeoutId = setTimeout(async () => {
+        try {
+          const currentSvg = chartContainerRef.current?.querySelector('svg');
+          if (currentSvg) {
+            await downloadSvgAsPng(
+              currentSvg,
+              createChartFileName(pendingDownload.title, pendingDownload.type || 'chart')
+            );
+            setSaveNotice('Downloaded');
+          }
+        } catch (error) {
+          console.error('Download failed:', error);
+          setSaveNotice('Download failed');
+        } finally {
+          setPendingDownload(null);
+          if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+          saveTimeoutRef.current = setTimeout(() => setSaveNotice(''), 1600);
+        }
+      }, 500); // 500ms to allow animations to settle initially
+    };
+
+    rafId = requestAnimationFrame(tryDownload);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      clearTimeout(timeoutId);
+    };
+  }, [pendingDownload, xCol, yCols, chartType, tableData]);
 
   // Determine numeric vs non-numeric columns from actual data
   const { numericCols, categoricalCols } = useMemo(() => {
@@ -217,16 +259,14 @@ export default function VisualBuilder({
   const handleDragStart = (e, col) => {
     e.dataTransfer.setData('text/plain', col);
     e.dataTransfer.effectAllowed = 'move';
-    setDragging(true);
   };
 
-  const handleDragEnd = () => setDragging(false);
+  const handleDragEnd = () => {};
 
   const handleDropX = (e) => {
     e.preventDefault();
     const col = e.dataTransfer.getData('text/plain');
     if (col) setXCol(col);
-    setDragging(false);
   };
 
   const handleDropY = (e) => {
@@ -235,23 +275,13 @@ export default function VisualBuilder({
     if (col && !yCols.includes(col) && col !== xCol) {
       setYCols(prev => [...prev, col]);
     }
-    setDragging(false);
   };
 
   const removeYCol = (col) => setYCols(prev => prev.filter(c => c !== col));
   const clearAll = () => { setXCol(''); setYCols([]); };
 
-  const saveVisualization = (payload) => {
-    const existing = loadSavedVisualizations();
-    const newItem = {
-      id: `viz-${Date.now()}`,
-      created_at: new Date().toISOString(),
-      ...payload,
-    };
-    persistSavedVisualizations([newItem, ...existing]);
-    setSaveNotice('Saved');
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => setSaveNotice(''), 1200);
+  const downloadVisualization = (payload) => {
+    setPendingDownload(payload);
   };
 
   const tooltipStyle = {
@@ -443,7 +473,7 @@ export default function VisualBuilder({
             <div className="ml-auto flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => saveVisualization({
+                onClick={() => downloadVisualization({
                   source: 'manual',
                   title: `Manual ${chartType} chart`,
                   type: chartType,
@@ -454,7 +484,7 @@ export default function VisualBuilder({
                 disabled={!canRender}
                 className="text-[10px] px-2.5 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] disabled:opacity-40"
               >
-                Save
+                Download
               </button>
               {saveNotice && (
                 <span className="text-[10px] text-[var(--color-success)] font-medium">
@@ -497,18 +527,17 @@ export default function VisualBuilder({
                   </button>
                   <button
                     type="button"
-                    onClick={() => saveVisualization({
-                      source: 'recommendation',
-                      title: rec.title || `${rec.type} chart`,
-                      type: rec.type,
-                      x_axis: rec.x_axis || null,
-                      y_axis: rec.y_axis || null,
-                      y_cols: rec.y_axis ? [rec.y_axis] : [],
-                    })}
+                    onClick={() => {
+                      applyRecommendation(rec);
+                      setPendingDownload({
+                        title: rec.title || `${rec.type} chart`,
+                        type: rec.type,
+                      });
+                    }}
                     className="text-[10px] px-2 py-2 rounded-[9px] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
-                    title="Save visualization"
+                    title="Download visualization"
                   >
-                    Save
+                    Download
                   </button>
                 </div>
               ))}
@@ -527,7 +556,7 @@ export default function VisualBuilder({
               </p>
             </div>
           ) : (
-            <div className="w-full h-full animate-fade-in">
+            <div ref={chartContainerRef} className="w-full h-full animate-fade-in">
               <ResponsiveContainer width="100%" height="100%">
                 {chartType === 'pie' ? (
                   <PieChart>
@@ -567,7 +596,7 @@ export default function VisualBuilder({
                       <Label value={yCols[0]} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
                     </YAxis>
                     <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                    <Scatter data={chartData} fill={COLORS[0]} />
+                    <Scatter data={chartData} fill={COLORS[0]} isAnimationActive={false} />
                   </ScatterChart>
                 ) : chartType === 'area' ? (
                   <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
@@ -589,7 +618,7 @@ export default function VisualBuilder({
                     <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                     <Legend />
                     {yCols.map((y, i) => (
-                      <Area key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} fill={`url(#area-${i})`} strokeWidth={2} />
+                      <Area key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} fill={`url(#area-${i})`} strokeWidth={2} isAnimationActive={false} />
                     ))}
                   </AreaChart>
                 ) : chartType === 'line' ? (
@@ -604,7 +633,7 @@ export default function VisualBuilder({
                     <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                     <Legend />
                     {yCols.map((y, i) => (
-                      <Line key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
+                      <Line key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={false} />
                     ))}
                   </LineChart>
                 ) : chartType === 'histogram' ? (
@@ -618,7 +647,7 @@ export default function VisualBuilder({
                     </YAxis>
                     <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                     <Legend />
-                    <Bar dataKey="frequency" fill={COLORS[0]} radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar dataKey="frequency" fill={COLORS[0]} radius={[4, 4, 0, 0]} maxBarSize={40} isAnimationActive={false} />
                   </BarChart>
                 ) : (
                   <BarChart data={chartData} margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
@@ -632,7 +661,7 @@ export default function VisualBuilder({
                     <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
                     <Legend />
                     {yCols.map((y, i) => (
-                      <Bar key={y} dataKey={y} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={45} />
+                      <Bar key={y} dataKey={y} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} maxBarSize={45} isAnimationActive={false} />
                     ))}
                   </BarChart>
                 )}

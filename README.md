@@ -1,4 +1,4 @@
-# InsightAI — AI-Powered Business Intelligence Platform
+  # InsightAI — AI-Powered Business Intelligence Platform
 
 A conversational BI dashboard where you upload CSV data, ask questions in natural language, and get SQL queries, charts, statistics, and predictions — powered by **Groq (Llama 3)**.
 

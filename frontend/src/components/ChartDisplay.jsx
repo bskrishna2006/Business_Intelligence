@@ -10,10 +10,10 @@ const COLORS = [
   'var(--color-accent-secondary)',
   'var(--color-success)',
   'var(--color-warning)',
-  'var(--color-text-secondary)',
-  'var(--color-text-muted)',
-  'var(--color-accent-soft)',
-  'var(--color-accent-secondary-soft)'
+  '#e16a86',
+  '#f0b86b',
+  '#7b6fd6',
+  '#3d77b0'
 ];
 
 const VISUALIZATION_ICONS = {

@@ -1,50 +1,47 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, ScatterChart, Scatter,
   PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Label
 } from 'recharts';
+import {
+  createChartFileName,
+  downloadDashboardAsHtml,
+  downloadDashboardAsPdf,
+  downloadDashboardAsPng,
+  downloadSvgAsPng,
+} from '../utils/exportUtils';
 
 const COLORS = [
   'var(--color-accent)',
   'var(--color-accent-secondary)',
   'var(--color-success)',
   'var(--color-warning)',
-  'var(--color-text-secondary)',
-  'var(--color-text-muted)'
+  '#e16a86',
+  '#3d77b0'
 ];
+
 const ICON_MAP = {
-  bar: '📊', line: '📈', area: '🏔️', scatter: '🔹', pie: '🥧', histogram: '📉'
+  bar: '📊',
+  line: '📈',
+  area: '🏔️',
+  scatter: '🔹',
+  pie: '🥧',
+  histogram: '📉'
 };
-
-const STORAGE_KEY = 'saved_visualizations';
-
-function loadSavedVisualizations() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function persistSavedVisualizations(items) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  window.dispatchEvent(new Event('saved-visualizations'));
-}
 
 export default function AutoDashboard({
   tableData,
   columns,
   datasetInfo,
   initialCharts,
-  initialSummary,
-  readOnly,
   onClose,
 }) {
   const [dashboards, setDashboards] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exportError, setExportError] = useState(null);
+  const cardRefs = useRef({});
 
   useEffect(() => {
     if (initialCharts && Array.isArray(initialCharts)) {
@@ -53,6 +50,7 @@ export default function AutoDashboard({
       setError(null);
       return;
     }
+
     fetchAutoDashboard();
   }, [tableData?.length, initialCharts]);
 
@@ -70,7 +68,7 @@ export default function AutoDashboard({
       const token = localStorage.getItem('auth_token');
       const res = await fetch('/api/datasets/auto-dashboard', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
@@ -83,24 +81,13 @@ export default function AutoDashboard({
       });
 
       const data = await res.json();
-      const normalizeError = (err) => {
-        if (!err) return null;
-        if (typeof err === 'string') return err;
-        if (typeof err?.message === 'string') return err.message;
-        try {
-          return JSON.stringify(err);
-        } catch {
-          return 'Unexpected error';
-        }
-      };
-
       if (res.ok && data.charts && data.charts.length > 0) {
         setDashboards(data.charts);
       } else {
-        setError(normalizeError(data.error) || 'Failed to generate dashboard');
+        setError(data.error || 'Failed to generate dashboard');
       }
-    } catch (err) {
-      console.error('Failed to fetch auto-dashboard:', err);
+    } catch (fetchError) {
+      console.error('Failed to fetch auto-dashboard:', fetchError);
       setError('Error generating visualizations');
     } finally {
       setIsLoading(false);
@@ -137,143 +124,180 @@ export default function AutoDashboard({
     };
     const tooltipFormatter = (value, name) => [formatNumber(value), name];
 
+    switch (chart.type) {
+      case 'bar':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+              </XAxis>
+              <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+              </YAxis>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+              <Legend />
+              {chart.series && chart.series.map((seriesName, index) => (
+                <Bar key={seriesName} dataKey={seriesName} fill={COLORS[index % COLORS.length]} radius={[8, 8, 0, 0]} />
+              ))}
+            </BarChart>
+          </ResponsiveContainer>
+        );
+
+      case 'line':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <LineChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+              </XAxis>
+              <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+              </YAxis>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+              <Legend />
+              {chart.series && chart.series.map((seriesName, index) => (
+                <Line key={seriesName} type="monotone" dataKey={seriesName} stroke={COLORS[index % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        );
+
+      case 'area':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+              </XAxis>
+              <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+              </YAxis>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+              <Legend />
+              {chart.series && chart.series.map((seriesName, index) => (
+                <Area
+                  key={seriesName}
+                  type="monotone"
+                  dataKey={seriesName}
+                  stroke={COLORS[index % COLORS.length]}
+                  fill={COLORS[index % COLORS.length]}
+                  fillOpacity={0.6}
+                />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        );
+
+      case 'scatter':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
+              <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+              </XAxis>
+              <YAxis dataKey={chart.y_axis} name={chart.y_axis} tick={axisTick} tickFormatter={formatNumber}>
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+              </YAxis>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+              <Scatter data={chart.data} fill={COLORS[0]} />
+            </ScatterChart>
+          </ResponsiveContainer>
+        );
+
+      case 'pie':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart>
+              <Pie
+                data={chart.data}
+                dataKey={chart.y_axis}
+                nameKey={chart.x_axis}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label={({ name, percent }) => `${formatAxisLabel(name)} ${(percent * 100).toFixed(0)}%`}
+              >
+                {chart.data.map((_, index) => (
+                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+            </PieChart>
+          </ResponsiveContainer>
+        );
+
+      case 'histogram':
+        return (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={chart.data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+              </XAxis>
+              <YAxis tick={axisTick} tickFormatter={formatNumber}>
+                <Label value={chart.y_axis || 'Count'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+              </YAxis>
+              <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
+              <Bar dataKey={chart.y_axis} fill={COLORS[0]} radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        );
+
+      default:
+        return <div className="text-red-500 text-sm">Unsupported chart type: {chart.type}</div>;
+    }
+  };
+
+  const dashboardTitle = datasetInfo?.table_name ? `${datasetInfo.table_name} dashboard` : 'InsightAI dashboard';
+
+  const handleDownloadChart = async (chart, index) => {
     try {
-      switch (chart.type) {
-        case 'bar':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
-                </XAxis>
-                <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
-                </YAxis>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                <Legend />
-                {chart.series && chart.series.map((s, i) => (
-                  <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[8, 8, 0, 0]} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          );
+      setExportError(null);
+      const svgNode = cardRefs.current[index]?.querySelector('svg');
+      await downloadSvgAsPng(svgNode, createChartFileName(chart.title, chart.type));
+    } catch (downloadError) {
+      console.error('Download failed:', downloadError);
+      setExportError(downloadError.message || 'Unable to download chart');
+    }
+  };
 
-        case 'line':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
-                </XAxis>
-                <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
-                </YAxis>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                <Legend />
-                {chart.series && chart.series.map((s, i) => (
-                  <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          );
+  const handleDownloadDashboardHtml = async () => {
+    try {
+      setExportError(null);
+      await downloadDashboardAsHtml(dashboardTitle, dashboards);
+    } catch (downloadError) {
+      console.error('Dashboard HTML export failed:', downloadError);
+      setExportError(downloadError.message || 'Unable to export dashboard HTML');
+    }
+  };
 
-        case 'area':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
-                </XAxis>
-                <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
-                </YAxis>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                <Legend />
-                {chart.series && chart.series.map((s, i) => (
-                  <Area
-                    key={s}
-                    type="monotone"
-                    dataKey={s}
-                    stroke={COLORS[i % COLORS.length]}
-                    fill={COLORS[i % COLORS.length]}
-                    fillOpacity={0.6}
-                  />
-                ))}
-              </AreaChart>
-            </ResponsiveContainer>
-          );
+  const handleDownloadDashboardPng = async () => {
+    try {
+      setExportError(null);
+      await downloadDashboardAsPng(dashboardTitle, dashboards);
+    } catch (downloadError) {
+      console.error('Dashboard PNG export failed:', downloadError);
+      setExportError(downloadError.message || 'Unable to export dashboard PNG');
+    }
+  };
 
-        case 'scatter':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
-                </XAxis>
-                <YAxis dataKey={chart.y_axis} name={chart.y_axis} tick={axisTick} tickFormatter={formatNumber}>
-                  <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
-                </YAxis>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                <Scatter data={chart.data} fill={COLORS[0]} />
-              </ScatterChart>
-            </ResponsiveContainer>
-          );
-
-        case 'pie':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={chart.data}
-                  dataKey={chart.y_axis}
-                  nameKey={chart.x_axis}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  label={({ name, percent }) => `${formatAxisLabel(name)} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {chart.data.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-              </PieChart>
-            </ResponsiveContainer>
-          );
-
-        case 'histogram':
-          return (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chart.data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-                <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                  <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
-                </XAxis>
-                <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                  <Label value={chart.y_axis || 'Count'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
-                </YAxis>
-                <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-                <Bar dataKey={chart.y_axis} fill={COLORS[0]} radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          );
-
-        default:
-          return <div>Unsupported chart type: {chart.type}</div>;
-      }
-    } catch (e) {
-      console.error('Chart render error:', e);
-      return <div className="text-red-500 text-sm">Error rendering chart</div>;
+  const handleDownloadDashboardPdf = async () => {
+    try {
+      setExportError(null);
+      await downloadDashboardAsPdf(dashboardTitle, dashboards);
+    } catch (downloadError) {
+      console.error('Dashboard PDF export failed:', downloadError);
+      setExportError(downloadError.message || 'Unable to export dashboard PDF');
     }
   };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[var(--color-bg-primary)] overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--color-border-soft)] bg-[var(--color-bg-card)]">
         <div>
           <h2 className="text-lg font-bold text-[var(--color-text-primary)] flex items-center gap-2">
@@ -282,26 +306,33 @@ export default function AutoDashboard({
           <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
             Auto-generated visualizations showing relationships in your data
           </p>
+          {exportError && (
+            <p className="text-xs text-[var(--color-danger)] mt-2">
+              {exportError}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => {
-              const existing = loadSavedVisualizations();
-              const newItem = {
-                id: `dash-${Date.now()}`,
-                created_at: new Date().toISOString(),
-                source: readOnly ? 'saved' : 'auto',
-                type: 'dashboard',
-                title: 'AI Dashboard',
-                charts: dashboards,
-                summary: initialSummary || null,
-              };
-              persistSavedVisualizations([newItem, ...existing]);
-            }}
+            onClick={handleDownloadDashboardPng}
             className="px-3 py-2 text-xs font-semibold rounded-[10px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
           >
-            Save Dashboard
+            Download PNG
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadDashboardPdf}
+            className="px-3 py-2 text-xs font-semibold rounded-[10px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
+          >
+            Download PDF
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadDashboardHtml}
+            className="px-3 py-2 text-xs font-semibold rounded-[10px] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
+          >
+            Download HTML
           </button>
           <button
             onClick={onClose}
@@ -312,7 +343,6 @@ export default function AutoDashboard({
         </div>
       </div>
 
-      {/* Content Area */}
       <div className="flex-1 overflow-auto">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -349,12 +379,18 @@ export default function AutoDashboard({
           </div>
         ) : (
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {dashboards.map((chart, idx) => (
+            {dashboards.map((chart, index) => (
               <div
-                key={idx}
+                key={index}
+                ref={(node) => {
+                  if (node) {
+                    cardRefs.current[index] = node;
+                  } else {
+                    delete cardRefs.current[index];
+                  }
+                }}
                 className="card p-5 border-[var(--color-border)] hover:border-[var(--color-accent)] hover:shadow-md transition-all"
               >
-                {/* Chart Header */}
                 <div className="mb-4 pb-3 border-b border-[var(--color-border-soft)]">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -370,23 +406,10 @@ export default function AutoDashboard({
                     </div>
                     <button
                       type="button"
-                      onClick={() => {
-                        const existing = loadSavedVisualizations();
-                        const newItem = {
-                          id: `viz-${Date.now()}`,
-                          created_at: new Date().toISOString(),
-                          source: readOnly ? 'saved' : 'auto',
-                          title: chart.title || `${chart.type} chart`,
-                          type: chart.type,
-                          x_axis: chart.x_axis || null,
-                          y_axis: chart.y_axis || null,
-                          y_cols: chart.y_axis ? [chart.y_axis] : [],
-                        };
-                        persistSavedVisualizations([newItem, ...existing]);
-                      }}
+                      onClick={() => handleDownloadChart(chart, index)}
                       className="text-[10px] px-2 py-1 rounded-md border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)]"
                     >
-                      Save
+                      Download
                     </button>
                     {chart.confidence && (
                       <div className="text-right">
@@ -404,24 +427,22 @@ export default function AutoDashboard({
                   )}
                 </div>
 
-                {/* Chart Render */}
                 <div className="w-full">
                   {renderChart(chart)}
                 </div>
 
-                {/* Chart Details */}
                 {chart.features && chart.features.length > 0 && (
                   <div className="mt-4 pt-3 border-t border-[var(--color-border-soft)]">
                     <p className="text-xs text-[var(--color-text-muted)] font-medium mb-2">
                       Columns:
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      {chart.features.map((f, i) => (
+                      {chart.features.map((feature, featureIndex) => (
                         <span
-                          key={i}
+                          key={featureIndex}
                           className="text-xs px-2 py-1 rounded-[7px] bg-[var(--color-accent-muted)] text-[var(--color-accent)] font-medium"
                         >
-                          {f}
+                          {feature}
                         </span>
                       ))}
                     </div>
@@ -433,7 +454,6 @@ export default function AutoDashboard({
         )}
       </div>
 
-      {/* Footer Summary */}
       {dashboards.length > 0 && (
         <div className="border-t border-[var(--color-border-soft)] px-6 py-3 bg-[var(--color-bg-card)] text-center">
           <p className="text-xs text-[var(--color-text-muted)]">

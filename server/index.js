@@ -143,15 +143,22 @@ const upload = multer({
   },
 });
 
-// Store current session info (per-server, simple approach)
-let currentSession = {
-  dbPath: null,
-  schema: null,
-  sampleRows: null,
-  tableName: null,
-  columns: null,
-  rowCount: null,
-};
+// Store current session info per user
+const userSessions = new Map();
+
+function getUserSession(userId) {
+  if (!userSessions.has(userId)) {
+    userSessions.set(userId, {
+      dbPath: null,
+      schema: null,
+      sampleRows: null,
+      tableName: null,
+      columns: null,
+      rowCount: null,
+    });
+  }
+  return userSessions.get(userId);
+}
 
 // ─── POST /api/upload (protected) ───
 app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => {
@@ -172,7 +179,7 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
       maxBodyLength: Infinity,
     });
 
-    currentSession = {
+    const updatedSession = {
       dbPath: response.data.db_path,
       schema: response.data.schema,
       sampleRows: response.data.sample_rows,
@@ -181,14 +188,16 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
       rowCount: response.data.row_count,
     };
 
-    console.log(`✅ Dataset loaded: ${currentSession.rowCount} rows, ${currentSession.columns?.length} columns`);
+    userSessions.set(req.user.id, updatedSession);
+
+    console.log(`✅ Dataset loaded for ${req.user.email}: ${updatedSession.rowCount} rows, ${updatedSession.columns?.length} columns`);
 
     res.json({
-      table_name: currentSession.tableName,
-      columns: currentSession.columns,
-      row_count: currentSession.rowCount,
-      sample_rows: currentSession.sampleRows,
-      schema: currentSession.schema,
+      table_name: updatedSession.tableName,
+      columns: updatedSession.columns,
+      row_count: updatedSession.rowCount,
+      sample_rows: updatedSession.sampleRows,
+      schema: updatedSession.schema,
     });
   } catch (err) {
     console.error('❌ Upload error:', err.response?.data || err.message);
@@ -200,6 +209,7 @@ app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => 
 
 // ─── GET /api/datasets/current (protected) ───
 app.get('/api/datasets/current', requireAuth, (req, res) => {
+  const currentSession = getUserSession(req.user.id);
   if (!currentSession.dbPath) {
     return res.status(404).json({ error: 'No dataset in current session.' });
   }
@@ -213,10 +223,50 @@ app.get('/api/datasets/current', requireAuth, (req, res) => {
   });
 });
 
+// ─── POST /api/datasets/clean (protected) ───
+app.post('/api/datasets/clean', requireAuth, async (req, res) => {
+  try {
+    const currentSession = getUserSession(req.user.id);
+    if (!currentSession.dbPath) {
+      return res.status(400).json({ error: 'No dataset in session to clean.' });
+    }
+
+    const { impute_numeric, fill_text, drop_duplicates, drop_empty_cols } = req.body;
+
+    const response = await axios.post(`${PYTHON_URL}/clean-data`, {
+      db_path: currentSession.dbPath,
+      impute_numeric: impute_numeric || 'mean',
+      fill_text: fill_text || 'N/A',
+      drop_duplicates: drop_duplicates ?? true,
+      drop_empty_cols: drop_empty_cols ?? true,
+    });
+
+    const updatedSession = {
+      ...currentSession,
+      schema: response.data.schema,
+      sampleRows: response.data.sample_rows,
+      columns: response.data.columns,
+      rowCount: response.data.row_count,
+    };
+
+    userSessions.set(req.user.id, updatedSession);
+
+    console.log(`🧹 Dataset cleaned for ${req.user.email}: ${response.data.cleaned_summary?.rows_removed ?? 0} rows removed`);
+
+    res.json(response.data);
+  } catch (err) {
+    console.error('❌ Clean dataset error:', err.response?.data || err.message);
+    res.status(500).json({
+      error: err.response?.data?.detail || err.message || 'Cleaning failed',
+    });
+  }
+});
+
 // ─── POST /api/ask (protected) ───
 app.post('/api/ask', requireAuth, async (req, res) => {
   try {
     const { question } = req.body;
+    const currentSession = getUserSession(req.user.id);
 
     if (!question) {
       return res.status(400).json({ error: 'Question is required' });
@@ -289,6 +339,7 @@ app.post('/api/recommend-visualizations', requireAuth, async (req, res) => {
 // ─── POST /api/datasets/auto-visualize (protected) ───
 app.post('/api/datasets/auto-visualize', requireAuth, async (req, res) => {
   try {
+    const currentSession = getUserSession(req.user.id);
     if (!currentSession.dbPath) {
       return res.status(400).json({ error: 'No dataset uploaded. Please upload a CSV file first.' });
     }
@@ -415,6 +466,7 @@ app.post('/api/datasets/auto-visualize', requireAuth, async (req, res) => {
 // ─── POST /api/datasets/auto-dashboard (protected) ───
 app.post('/api/datasets/auto-dashboard', requireAuth, async (req, res) => {
   try {
+    const currentSession = getUserSession(req.user.id);
     if (!currentSession.dbPath) {
       return res.status(400).json({ error: 'No dataset uploaded. Please upload a CSV file first.' });
     }
