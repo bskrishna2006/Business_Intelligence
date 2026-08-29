@@ -133,7 +133,7 @@ curl -X POST http://localhost:5000/api/ask \
 - SQL queries are validated (SELECT-only)
 - DROP, DELETE, UPDATE, INSERT are blocked
 - File uploads restricted to .csv, max 50MB
-
+edit by jaya
 ## Tech Stack
 
 | Layer | Technology |
