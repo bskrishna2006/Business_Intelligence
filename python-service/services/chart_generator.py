@@ -132,17 +132,17 @@ def generate_scatter(df: pd.DataFrame, x_col: str, y_col: str, rec: Dict) -> Dic
 def generate_bar(df: pd.DataFrame, x_col: str, y_col: str, rec: Dict) -> Dict:
     """Generate bar chart for categorical comparison"""
     try:
-        # Group by x_col and sum y_col
-        grouped = df.groupby(x_col)[y_col].agg(['sum', 'count', 'mean']).reset_index()
+        df_copy = df.copy()
+        df_copy[y_col] = pd.to_numeric(df_copy[y_col], errors='coerce')
+        grouped = df_copy.groupby(x_col)[y_col].agg(['sum', 'count', 'mean']).reset_index()
         
-        # Limit to top 20 for readability
-        if len(grouped) > 20:
-            grouped = grouped.nlargest(20, 'sum')
+        # Sort by sum descending and limit to top 10 categories
+        grouped = grouped.sort_values('sum', ascending=False).head(10)
         
         data = [
             {
                 x_col: str(row[x_col]),
-                y_col: float(row['sum']),
+                y_col: float(np.round(row['sum'], 2)),
                 "count": int(row['count']),
                 "mean": float(np.round(row['mean'], 2))
             }
@@ -166,25 +166,28 @@ def generate_bar(df: pd.DataFrame, x_col: str, y_col: str, rec: Dict) -> Dict:
 
 
 def generate_line(df: pd.DataFrame, x_col: str, y_col: str, rec: Dict) -> Dict:
-    """Generate line chart for trends"""
+    """Generate line chart for trends aggregated over time"""
     try:
-        # Try to treat x as sortable (time, index, etc.)
-        try:
-            sorted_df = df.sort_values(x_col)
-        except:
-            sorted_df = df
+        df_copy = df.copy()
+        df_copy[y_col] = pd.to_numeric(df_copy[y_col], errors='coerce')
         
-        # Limit to last 100 points for readability
-        if len(sorted_df) > 100:
-            sorted_df = sorted_df.tail(100)
+        # Group by x_col and sum y_col
+        grouped = df_copy.groupby(x_col)[y_col].sum().reset_index()
+        
+        try:
+            grouped = grouped.sort_values(x_col)
+        except:
+            pass
+            
+        if len(grouped) > 40:
+            grouped = grouped.tail(40)
         
         data = [
             {
-                x_col: str(row[x_col])[:20],  # Truncate for display
-                y_col: float(pd.to_numeric(row[y_col], errors='coerce')),
-                "index": i
+                x_col: str(row[x_col])[:15],
+                y_col: float(np.round(row[y_col], 2)),
             }
-            for i, (_, row) in enumerate(sorted_df.iterrows())
+            for _, row in grouped.iterrows()
         ]
         
         return {

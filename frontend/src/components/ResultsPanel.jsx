@@ -4,11 +4,13 @@ import ChartDisplay from './ChartDisplay';
 import StatsPanel from './StatsPanel';
 import InsightsPanel from './InsightsPanel';
 import VisualBuilder from './VisualBuilder';
-import { ChartBar, Table, Sliders, Calculator, Lightbulb, Code, Printer } from '@phosphor-icons/react';
+import KnowledgeGraph from './KnowledgeGraph';
+import { ChartBar, Table, Sliders, Calculator, Lightbulb, Code, Printer, ShareNetwork } from '@phosphor-icons/react';
 
 const TABS = [
   { id: 'chart', label: 'Chart', icon: ChartBar },
   { id: 'table', label: 'Table', icon: Table },
+  { id: 'graph', label: 'Graph', icon: ShareNetwork },
   { id: 'explore', label: 'Explore', icon: Sliders },
   { id: 'stats', label: 'Stats', icon: Calculator },
   { id: 'insights', label: 'Insights', icon: Lightbulb },
@@ -27,8 +29,8 @@ export default function ResultsPanel({ results, columns, fullData }) {
     Object.keys(table_result[0]).slice(1).some(k => !isNaN(Number(table_result[0][k])));
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-bg-primary)]">
-      {/* Tabs */}
+    <div className="flex flex-col h-full bg-[var(--color-bg-primary)] select-none">
+      {/* Tabs Bar */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--color-border)] bg-[var(--color-bg-secondary)] shrink-0">
         <div className="flex items-center gap-1 overflow-x-auto">
           {TABS.map((tab) => {
@@ -39,9 +41,9 @@ export default function ResultsPanel({ results, columns, fullData }) {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[var(--color-accent)] text-white shadow-sm shadow-[var(--color-accent)]/15'
+                    ? 'bg-[var(--color-accent)] text-white shadow-xs'
                     : 'text-[var(--color-text-muted)] hover:bg-[var(--color-bg-card)] hover:text-[var(--color-text-primary)]'
                 }`}
               >
@@ -55,7 +57,7 @@ export default function ResultsPanel({ results, columns, fullData }) {
         {hasResults && (
           <button
             onClick={() => window.print()}
-            className="btn-secondary px-3 py-1.5 text-xs font-semibold cursor-pointer flex items-center gap-1.5 no-print shrink-0"
+            className="btn-secondary px-3 py-1 text-xs font-mono font-semibold cursor-pointer flex items-center gap-1.5 no-print shrink-0"
             title="Export PDF Report"
           >
             <Printer size={13} />
@@ -69,30 +71,30 @@ export default function ResultsPanel({ results, columns, fullData }) {
         {!hasResults && activeTab !== 'explore' ? (
           <div className="flex flex-col items-center justify-center h-full text-center text-[var(--color-text-muted)] space-y-2">
             <ChartBar size={32} className="opacity-40" />
-            <p className="text-xs font-semibold">Run a query in Ask AI to view dynamic charts and tables</p>
+            <p className="text-xs font-mono font-medium">Run a query in Ask AI to view dynamic charts and tables</p>
           </div>
         ) : (
           <>
             {activeTab === 'chart' && (
               canAutoChart ? (
-                <div className="h-full bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-4 shadow-sm">
+                <div className="h-full bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border)] p-4">
                   <ChartDisplay data={table_result} />
                 </div>
               ) : chart_base64 ? (
-                <div className="flex items-center justify-center h-full bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-4">
+                <div className="flex items-center justify-center h-full bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border)] p-4">
                   <img
                     src={`data:image/png;base64,${chart_base64}`}
                     alt="Analysis Chart"
-                    className="max-h-full max-w-full object-contain rounded-lg"
+                    className="max-h-full max-w-full object-contain rounded-md"
                   />
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8 text-[var(--color-text-muted)] space-y-2">
                   <ChartBar size={32} className="opacity-40" />
-                  <p className="text-xs font-semibold">No chart automatically generated for this query.</p>
+                  <p className="text-xs font-mono font-medium">No chart automatically generated for this query.</p>
                   <button
                     onClick={() => setActiveTab('explore')}
-                    className="btn-secondary px-3 py-1.5 text-xs font-semibold mt-2 cursor-pointer"
+                    className="btn-secondary px-3 py-1.5 text-xs font-mono font-semibold mt-2 cursor-pointer"
                   >
                     Build Custom Chart in Explore →
                   </button>
@@ -106,6 +108,15 @@ export default function ResultsPanel({ results, columns, fullData }) {
               </div>
             )}
 
+            {activeTab === 'graph' && (
+              <div className="h-full">
+                <KnowledgeGraph
+                  tableData={table_result?.length ? table_result : fullData}
+                  columns={columns}
+                />
+              </div>
+            )}
+
             {activeTab === 'explore' && (
               <VisualBuilder
                 columns={columns}
@@ -114,24 +125,35 @@ export default function ResultsPanel({ results, columns, fullData }) {
             )}
 
             {activeTab === 'stats' && (
-              <div className="h-full overflow-auto bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-5">
+              <div className="h-full overflow-auto bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border)] p-5">
                 <StatsPanel stats={stats} />
               </div>
             )}
 
             {activeTab === 'insights' && (
-              <div className="h-full overflow-auto bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-5">
+              <div className="h-full overflow-auto bg-[var(--color-bg-card)] rounded-lg border border-[var(--color-border)] p-5">
                 <InsightsPanel insights={insights} prediction={prediction} />
               </div>
             )}
 
             {activeTab === 'sql' && (
-              <div className="h-full overflow-auto bg-[var(--color-bg-card)] rounded-xl border border-[var(--color-border)] p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[var(--color-accent)] uppercase tracking-wider">Executed SQL Query</span>
-                  <span className="text-xs text-[var(--color-text-muted)] font-semibold">{table_result?.length ?? 0} rows returned</span>
+              <div className="h-full overflow-auto bg-[#161214] text-white rounded-xl border border-white/10 p-5 space-y-3 font-mono">
+                {/* Window Header */}
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
+                  </div>
+                  <span className="text-[10px] text-zinc-400 font-bold">query.sql</span>
                 </div>
-                <pre className="text-xs font-mono text-[var(--color-accent)] whitespace-pre-wrap leading-relaxed bg-[var(--color-bg-secondary)] rounded-lg p-4 border border-[var(--color-border)]">
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-xs font-bold text-[var(--color-accent)] uppercase">EXECUTED SQL QUERY</span>
+                  <span className="text-[10px] text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 rounded font-mono">
+                    ✓ {table_result?.length ?? 0} rows returned
+                  </span>
+                </div>
+                <pre className="text-xs font-mono text-white whitespace-pre-wrap leading-relaxed bg-black/60 rounded-lg p-4 border border-white/10">
                   {sql_query}
                 </pre>
               </div>

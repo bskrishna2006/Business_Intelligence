@@ -11,6 +11,7 @@ import DataTable from './components/DataTable';
 import InsightsPanel from './components/InsightsPanel';
 import StatsPanel from './components/StatsPanel';
 import DataCleaningModal from './components/DataCleaningModal';
+import KnowledgeGraph from './components/KnowledgeGraph';
 import { Broom, Sparkle, MagnifyingGlass, X } from '@phosphor-icons/react';
 
 function authFetch(url, options = {}) {
@@ -321,6 +322,24 @@ export default function App() {
                 )
                 : <EmptyPage icon="📊" title="No dataset" desc="Upload a CSV to build visualizations." />}
             </div>
+          </div>
+        );
+
+      case 'graph':
+        return (
+          <div className="flex-1 flex flex-col min-h-0">
+            {datasetInfo ? (
+              <KnowledgeGraph
+                tableData={fullData}
+                datasetInfo={datasetInfo}
+                columns={datasetInfo.columns}
+                onExecuteQuery={(query) => {
+                  setActivePage('ask');
+                }}
+              />
+            ) : (
+              <EmptyPage icon="🌐" title="No dataset" desc="Upload a CSV to generate the Knowledge Graph." />
+            )}
           </div>
         );
 

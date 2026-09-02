@@ -17,14 +17,14 @@ const CHART_TYPES = [
 ];
 
 const COLORS = [
-  'var(--color-accent)',
-  'var(--color-accent-secondary)',
-  'var(--color-success)',
-  'var(--color-warning)',
-  '#e16a86',
-  '#f0b86b',
-  '#7b6fd6',
-  '#3d77b0'
+  '#6366f1', // Indigo
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
+  '#8b5cf6', // Purple
+  '#06b6d4', // Cyan
+  '#14b8a6', // Teal
 ];
 
 export default function VisualBuilder({

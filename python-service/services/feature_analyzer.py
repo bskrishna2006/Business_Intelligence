@@ -310,24 +310,40 @@ Only suggest column pairs that make sense together.
         
         return unique
     
+    def _is_id_column(self, col_name: str) -> bool:
+        """Check if column is an identifier key rather than a quantitative metric."""
+        name = str(col_name).lower().strip()
+        return (
+            name.endswith('_id') or 
+            name.startswith('id_') or 
+            name in ['id', 'uuid', 'index', 'seq', 'sequence', 'no', 'number', 'code', 'row_id'] or 
+            '_id_' in name
+        )
+
     def _get_numeric_columns(self, df: pd.DataFrame) -> List[str]:
-        """Get numeric columns"""
-        return df.select_dtypes(include=[np.number]).columns.tolist()
-    
+        """Get quantitative numeric columns (excluding identifier keys)"""
+        cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        return [c for c in cols if not self._is_id_column(c)]
+
     def _get_categorical_columns(self, df: pd.DataFrame) -> List[str]:
-        """Get categorical columns"""
-        return df.select_dtypes(include=['object']).columns.tolist()
-    
+        """Get categorical columns (excluding identifier keys)"""
+        cols = df.select_dtypes(include=['object']).columns.tolist()
+        return [c for c in cols if not self._is_id_column(c)]
+
     def _get_datetime_columns(self, df: pd.DataFrame) -> List[str]:
         """Get datetime columns"""
         datetime_cols = []
         for col in df.columns:
+            name = str(col).lower().strip()
+            if 'date' in name or 'time' in name or 'year' in name or 'month' in name or 'timestamp' in name:
+                datetime_cols.append(col)
+                continue
             if pd.api.types.is_datetime64_any_dtype(df[col]):
                 datetime_cols.append(col)
             elif df[col].dtype == 'object':
                 try:
                     pd.to_datetime(df[col], errors='coerce')
-                    if df[col].notna().sum() > len(df) * 0.5:  # If 50%+ can be parsed
+                    if df[col].notna().sum() > len(df) * 0.5:
                         datetime_cols.append(col)
                 except:
                     pass
