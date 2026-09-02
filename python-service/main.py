@@ -27,6 +27,7 @@ from services.recharts_generator import generate_recharts_data, generate_multipl
 from services.auto_visualize import auto_visualize
 from services.chart_generator import generate_multiple_chart_data
 from services.feature_analyzer import FeatureAnalyzer
+from services.transform_service import execute_join, apply_transformation_step
 
 # ─── FastAPI App ───
 app = FastAPI(
@@ -452,6 +453,42 @@ async def auto_dashboard(request: AutoDashboardRequest):
             "error": str(e)
         }
 
+
+# ─── Transformation Endpoints ───
+class JoinRequest(BaseModel):
+    dataset1_rows: list
+    dataset2_rows: list
+    join_type: str = "inner"
+    key1: str
+    key2: str
+
+class TransformRequest(BaseModel):
+    table_rows: list
+    action: str
+    params: dict
+
+@app.post("/api/transform/join")
+async def api_transform_join(request: JoinRequest):
+    try:
+        df1 = pd.DataFrame(request.dataset1_rows)
+        df2 = pd.DataFrame(request.dataset2_rows)
+        merged_df = execute_join(df1, df2, request.join_type, request.key1, request.key2)
+        records = merged_df.to_dict(orient="records")
+        cols = list(merged_df.columns)
+        return {"columns": cols, "rows": records, "row_count": len(records)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/transform/apply")
+async def api_transform_apply(request: TransformRequest):
+    try:
+        df = pd.DataFrame(request.table_rows)
+        result_df = apply_transformation_step(df, request.action, request.params)
+        records = result_df.to_dict(orient="records")
+        cols = list(result_df.columns)
+        return {"columns": cols, "rows": records, "row_count": len(records)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # ─── Health Check ───
 @app.get("/health")

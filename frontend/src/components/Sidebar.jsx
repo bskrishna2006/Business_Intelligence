@@ -10,12 +10,14 @@ import {
   Sun,
   SignOut,
   LockKey,
-  ShareNetwork
+  ShareNetwork,
+  GitMerge
 } from '@phosphor-icons/react';
 
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: SquaresFour },
   { id: 'ask', label: 'Ask AI', icon: ChatTeardropText },
+  { id: 'transform', label: 'Transformations', icon: GitMerge },
   { id: 'graph', label: 'Knowledge Graph', icon: ShareNetwork },
   { id: 'visualize', label: 'Visualize', icon: ChartBar },
   { id: 'data', label: 'Browse Table', icon: Table },

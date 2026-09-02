@@ -21,7 +21,8 @@ import {
   CurrencyDollar,
   ChartDonut,
   Sliders,
-  ShareNetwork
+  ShareNetwork,
+  GitMerge
 } from '@phosphor-icons/react';
 import { 
   ResponsiveContainer, 
@@ -292,6 +293,13 @@ export default function DashboardPage({
                 </div>
                 {datasetInfo && (
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => onNavigate('transform')}
+                            className="btn-secondary px-3.5 py-2 text-xs font-semibold cursor-pointer flex items-center gap-2"
+                        >
+                            <GitMerge size={14} className="text-[var(--color-accent)]" />
+                            <span>Transformations</span>
+                        </button>
                         <button
                             onClick={() => onNavigate('graph')}
                             className="btn-secondary px-3.5 py-2 text-xs font-semibold cursor-pointer flex items-center gap-2"

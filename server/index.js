@@ -575,6 +575,27 @@ function generateFallbackRecommendations(columns) {
   return recommendations;
 }
 
+// ─── Data Transformation Proxies ───
+app.post('/api/transform/join', async (req, res) => {
+  try {
+    const pyRes = await axios.post(`${PYTHON_URL}/api/transform/join`, req.body);
+    res.json(pyRes.data);
+  } catch (err) {
+    console.error('Transform join error:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({ error: err.response?.data?.detail || err.message });
+  }
+});
+
+app.post('/api/transform/apply', async (req, res) => {
+  try {
+    const pyRes = await axios.post(`${PYTHON_URL}/api/transform/apply`, req.body);
+    res.json(pyRes.data);
+  } catch (err) {
+    console.error('Transform apply error:', err.response?.data || err.message);
+    res.status(err.response?.status || 500).json({ error: err.response?.data?.detail || err.message });
+  }
+});
+
 // ─── Health Check ───
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', python_service: PYTHON_URL });
