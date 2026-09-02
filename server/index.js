@@ -18,8 +18,14 @@ const PORT = process.env.PORT || 5000;
 const PYTHON_URL = process.env.PYTHON_SERVICE_URL || 'http://localhost:8000';
 const JWT_SECRET = process.env.JWT_SECRET || 'insightai-secret-key-change-in-production';
 
+// ─── Storage Directory Setup ───
+const dataDir = process.env.APP_DATA_DIR || __dirname;
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 // ─── Auth DB Setup ───
-const authDb = new Database(path.join(__dirname, 'auth.db'));
+const authDb = new Database(path.join(dataDir, 'auth.db'));
 authDb.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +41,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // Ensure uploads directory exists
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join(dataDir, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -601,6 +607,18 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', python_service: PYTHON_URL });
 });
 
+// ─── Serve Static Frontend in Production / Desktop ───
+const frontendDist = process.env.FRONTEND_DIST || path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDist)) {
+  app.use(express.static(frontendDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendDist, 'index.html'));
+  });
+}
+
 // ─── Error Handler ───
 app.use((err, req, res, next) => {
   console.error('Server error:', err.message);
@@ -614,5 +632,5 @@ app.listen(PORT, () => {
   console.log(`\n🚀 Express server running on http://localhost:${PORT}`);
   console.log(`📡 Python service: ${PYTHON_URL}`);
   console.log(`📁 Uploads directory: ${uploadsDir}`);
-  console.log(`🔐 Auth DB: ${path.join(__dirname, 'auth.db')}\n`);
+  console.log(`🔐 Auth DB: ${path.join(dataDir, 'auth.db')}\n`);
 });
