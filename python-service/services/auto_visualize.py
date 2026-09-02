@@ -198,8 +198,9 @@ Return ONLY valid JSON (no markdown, no backticks):
     
     try:
         client = get_groq_client()
+        model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             messages=[
                 {
                     "role": "system",

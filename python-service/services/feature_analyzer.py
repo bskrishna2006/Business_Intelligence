@@ -198,8 +198,9 @@ IMPORTANT: Only suggest charts if the columns actually exist in the dataset.
 Only suggest column pairs that make sense together.
 """
             
+            model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
             message = self.groq_client.messages.create(
-                model="mixtral-8x7b-32768",
+                model=model_name,
                 max_tokens=500,
                 messages=[
                     {"role": "user", "content": prompt}

@@ -134,8 +134,9 @@ Convert the following Natural Language query into SQL:
 
     try:
         groq_client = get_client()
+        model_name = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
         response = groq_client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=model_name,
             messages=[
                 {
                     "role": "system",

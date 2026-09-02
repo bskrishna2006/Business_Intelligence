@@ -11,7 +11,7 @@ import DataTable from './components/DataTable';
 import InsightsPanel from './components/InsightsPanel';
 import StatsPanel from './components/StatsPanel';
 import DataCleaningModal from './components/DataCleaningModal';
-import { Broom } from '@phosphor-icons/react';
+import { Broom, Sparkle, MagnifyingGlass, X } from '@phosphor-icons/react';
 
 function authFetch(url, options = {}) {
   const token = localStorage.getItem('auth_token');
@@ -40,6 +40,13 @@ export default function App() {
   const [selectedRecommendation, setSelectedRecommendation] = useState(null);
   const [savedDashboard, setSavedDashboard] = useState(null);
   const [isCleanModalOpen, setIsCleanModalOpen] = useState(false);
+  const [cachedRecommendations, setCachedRecommendations] = useState(null);
+
+  // NL Data Retrieval Filter State
+  const [nlFilterInput, setNlFilterInput] = useState('');
+  const [nlFilterActive, setNlFilterActive] = useState(null);
+  const [nlFilterRows, setNlFilterRows] = useState(null);
+  const [isFilteringNL, setIsFilteringNL] = useState(false);
 
   const [datasetInfo, setDatasetInfo] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -110,6 +117,7 @@ export default function App() {
     setDatasetInfo(null); setMessages([]);
     setResults(null); setFullData(null);
     setQueryHistory([]);
+    setCachedRecommendations(null);
     setActivePage('dashboard');
   };
 
@@ -120,6 +128,7 @@ export default function App() {
       content: `Dataset loaded — ${data.row_count} rows, ${data.columns?.length} columns. Go to Ask AI to start querying!`,
     }]);
     setResults(null);
+    setCachedRecommendations(null);
     setActivePage('dashboard');
 
     try {
@@ -133,6 +142,36 @@ export default function App() {
     } catch {
       setFullData(data.sample_rows);
     }
+  };
+
+  const handleNLFilterSubmit = async (e) => {
+    e.preventDefault();
+    if (!nlFilterInput.trim() || isFilteringNL) return;
+    setIsFilteringNL(true);
+    try {
+      const res = await authFetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: nlFilterInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.table_result) {
+        setNlFilterRows(data.table_result);
+        setNlFilterActive(nlFilterInput.trim());
+      } else {
+        alert(data.error || 'Failed to retrieve data for filter');
+      }
+    } catch (err) {
+      console.error('NL Filter error:', err);
+    } finally {
+      setIsFilteringNL(false);
+    }
+  };
+
+  const handleResetNLFilter = () => {
+    setNlFilterRows(null);
+    setNlFilterActive(null);
+    setNlFilterInput('');
   };
 
   const handleSendMessage = async (question, messageData = {}) => {
@@ -220,6 +259,8 @@ export default function App() {
             onNavigate={setActivePage}
             onCreateVisualization={handleCreateVisualization}
             onOpenSavedVisualization={handleOpenSavedVisualization}
+            recommendations={cachedRecommendations}
+            onRecommendationsFetched={setCachedRecommendations}
           />
         );
 
@@ -290,11 +331,13 @@ export default function App() {
               <div>
                 <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Data Browser</h2>
                 <p className="text-[10px] text-[var(--color-text-muted)]">
-                  {table_result?.length
-                    ? `Showing ${table_result.length} query results`
-                    : fullData?.length
-                      ? `${fullData.length.toLocaleString()} rows loaded — click any column header to profile it`
-                      : 'No data'}
+                  {nlFilterActive
+                    ? `Showing ${nlFilterRows?.length ?? 0} retrieved rows matching "${nlFilterActive}"`
+                    : table_result?.length
+                      ? `Showing ${table_result.length} query results`
+                      : fullData?.length
+                        ? `${fullData.length.toLocaleString()} rows loaded — click any column header to profile it`
+                        : 'No data'}
                 </p>
               </div>
               {datasetInfo && (
@@ -307,9 +350,60 @@ export default function App() {
                 </button>
               )}
             </div>
+
+            {/* Natural Language Data Retrieval Bar */}
+            {datasetInfo && (
+              <div className="px-6 py-3 border-b border-[var(--color-border)] bg-[var(--color-bg-card)] flex flex-col md:flex-row items-center gap-3 justify-between">
+                <form onSubmit={handleNLFilterSubmit} className="flex-1 flex items-center gap-2 w-full">
+                  <div className="flex-1 flex items-center gap-2 bg-[var(--color-bg-primary)] border border-[var(--color-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--color-accent)] transition-all">
+                    <Sparkle size={15} className="text-[var(--color-accent)] shrink-0" />
+                    <input
+                      type="text"
+                      value={nlFilterInput}
+                      onChange={(e) => setNlFilterInput(e.target.value)}
+                      placeholder="Retrieve data with AI (e.g. 'show products with price > 100 and region East')..."
+                      className="flex-1 bg-transparent text-xs text-[var(--color-text-primary)] placeholder-[var(--color-text-muted)] outline-none font-semibold"
+                      disabled={isFilteringNL}
+                    />
+                    {nlFilterActive && (
+                      <button
+                        type="button"
+                        onClick={handleResetNLFilter}
+                        className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] p-0.5 cursor-pointer"
+                        title="Reset filter"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!nlFilterInput.trim() || isFilteringNL}
+                    className="btn-primary px-4 py-2 text-xs font-semibold shrink-0 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+                  >
+                    {isFilteringNL ? <span>Retrieving...</span> : (
+                      <>
+                        <MagnifyingGlass size={13} weight="bold" />
+                        <span>Retrieve Data</span>
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                {nlFilterActive && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--color-accent-muted)]/40 border border-[var(--color-accent)]/30 text-xs text-[var(--color-accent)] font-semibold shrink-0">
+                    <span>Active Filter: "{nlFilterActive}" ({nlFilterRows?.length ?? 0} rows)</span>
+                    <button onClick={handleResetNLFilter} className="hover:underline text-[10px] font-bold cursor-pointer ml-1">
+                      Reset
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex-1 min-h-0 overflow-hidden p-4 flex">
-              {(table_result?.length || fullData?.length) ? (
-                <DataTable data={table_result?.length ? table_result : fullData} />
+              {(nlFilterRows || table_result?.length || fullData?.length) ? (
+                <DataTable data={nlFilterRows ? nlFilterRows : table_result?.length ? table_result : fullData} />
               ) : (
                 <EmptyPage icon="📋" title="No data" desc="Upload a CSV or run a query." />
               )}
