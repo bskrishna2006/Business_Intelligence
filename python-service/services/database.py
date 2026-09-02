@@ -1,34 +1,81 @@
 """
-Database service — CSV to SQLite conversion and query execution.
+Database service — Smart CSV to SQLite conversion and safe query execution.
 """
-import sqlite3
-import pandas as pd
 import os
 import re
+import csv
+import json
+import sqlite3
+import pandas as pd
 
 
 def csv_to_sqlite(file_path: str) -> dict:
     """
     Load a CSV file into an in-memory SQLite database saved to disk.
-    Returns schema info, sample rows, and the database path.
+    Handles title metadata rows, multi-column headers, duplicate column names,
+    formatted numbers with commas, hyphens, and NaN JSON sanitization.
     """
-    # Read CSV with pandas
-    df = pd.read_csv(file_path)
+    # Step 1: Inspect initial lines to detect true header row index
+    header_idx = 0
+    try:
+        with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+            sample_lines = [f.readline() for _ in range(15)]
 
-    # Clean column names: remove spaces/special chars, lowercase
-    df.columns = [
-        re.sub(r'[^a-zA-Z0-9_]', '_', col.strip()).lower()
-        for col in df.columns
-    ]
+        rows = list(csv.reader([l for l in sample_lines if l.strip()]))
+        if rows:
+            max_cols = max(len(r) for r in rows)
+            for idx, r in enumerate(rows):
+                if len(r) >= max_cols - 2:
+                    non_empty = [cell.strip() for cell in r if cell.strip()]
+                    text_cells = [cell for cell in non_empty if any(c.isalpha() for c in cell)]
+                    if len(text_cells) >= len(non_empty) * 0.4 and len(non_empty) > 0:
+                        header_idx = idx
+                        break
+    except Exception as e:
+        print(f"⚠️ Header detection fallback to 0: {e}")
+        header_idx = 0
 
-    # Create SQLite database alongside the CSV
+    # Step 2: Read CSV using detected header index
+    try:
+        df = pd.read_csv(file_path, skiprows=header_idx)
+    except Exception:
+        df = pd.read_csv(file_path)
+
+    # Drop completely empty columns
+    df = df.dropna(how="all", axis=1)
+
+    # Step 3: Disambiguate duplicate column names & sanitize for SQLite
+    clean_cols = []
+    seen = {}
+    for col in df.columns:
+        c = re.sub(r'[^a-zA-Z0-9_]', '_', str(col).strip()).lower()
+        c = re.sub(r'_+', '_', c).strip('_')
+        if not c:
+            c = "col"
+        if c in seen:
+            seen[c] += 1
+            c = f"{c}_{seen[c]}"
+        else:
+            seen[c] = 0
+        clean_cols.append(c)
+    df.columns = clean_cols
+
+    # Step 4: Clean numeric columns containing strings with commas or hyphens
+    for col in df.columns:
+        if df[col].dtype == object:
+            cleaned = df[col].astype(str).str.strip().replace({"-": None, "": None, "nan": None, "None": None})
+            # Remove commas and convert to numeric
+            numeric_series = pd.to_numeric(cleaned.str.replace(",", ""), errors="coerce")
+            if numeric_series.notnull().sum() >= (cleaned.notnull().sum() * 0.4) and cleaned.notnull().sum() > 0:
+                df[col] = numeric_series
+            else:
+                df[col] = cleaned
+
+    # Step 5: Save SQLite database alongside the CSV
     db_path = file_path.rsplit('.', 1)[0] + '.db'
     conn = sqlite3.connect(db_path)
-
-    # Write dataframe to SQLite table named 'data'
     df.to_sql('data', conn, if_exists='replace', index=False)
 
-    # Get schema info
     cursor = conn.execute("PRAGMA table_info(data)")
     columns_info = cursor.fetchall()
 
@@ -40,12 +87,10 @@ def csv_to_sqlite(file_path: str) -> dict:
         columns.append(col_name)
         schema[col_name] = col_type
 
-    # Get sample rows
+    # Step 6: Get JSON-safe sample rows (converts NaN to null)
     sample_df = df.head(5)
-    sample_rows = sample_df.to_dict(orient='records')
-
+    sample_rows = json.loads(sample_df.to_json(orient='records'))
     row_count = len(df)
-
     conn.close()
 
     return {
@@ -68,9 +113,9 @@ def get_schema(db_path: str) -> dict:
     for col_info in columns_info:
         schema[col_info[1]] = col_info[2]
 
-    # Get sample rows
+    # Get JSON-safe sample rows
     df = pd.read_sql("SELECT * FROM data LIMIT 5", conn)
-    sample_rows = df.to_dict(orient='records')
+    sample_rows = json.loads(df.to_json(orient='records'))
 
     conn.close()
     return {"schema": schema, "sample_rows": sample_rows}
@@ -99,19 +144,15 @@ def validate_sql(sql: str) -> bool:
 def execute_query(db_path: str, sql: str) -> list[dict]:
     """
     Execute a SELECT query against the SQLite database.
-    Returns results as a list of dictionaries.
+    Returns results as a list of dictionaries, safely handling NaN floats for JSON output.
     """
     if not validate_sql(sql):
         raise ValueError("Only SELECT queries are allowed. Destructive operations are blocked.")
 
     conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-
     try:
-        cursor = conn.execute(sql)
-        rows = cursor.fetchall()
-        columns = [description[0] for description in cursor.description]
-        result = [dict(zip(columns, row)) for row in rows]
+        df = pd.read_sql(sql, conn)
+        result = json.loads(df.to_json(orient='records'))
         return result
     except Exception as e:
         raise ValueError(f"SQL execution error: {str(e)}")

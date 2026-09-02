@@ -450,14 +450,18 @@ app.post('/api/datasets/auto-visualize', requireAuth, async (req, res) => {
       res.json(result);
 
     } catch (recErr) {
-      console.error('❌ Recommendation generation error:', recErr.response?.data || recErr.message);
-      res.status(500).json({
+      console.warn('⚠️ Recommendation generation warning:', recErr.response?.data || recErr.message);
+      res.json({
+        recommendations: [],
+        summary: { totalRecommendations: 0 },
         error: recErr.response?.data?.detail || recErr.message || 'Failed to generate recommendations'
       });
     }
   } catch (err) {
     console.error('❌ Auto-visualize error:', err.message);
-    res.status(500).json({
+    res.json({
+      recommendations: [],
+      summary: { totalRecommendations: 0 },
       error: err.message || 'Auto-visualization failed'
     });
   }
