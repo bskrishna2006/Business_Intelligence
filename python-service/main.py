@@ -3,6 +3,16 @@ AI Business Intelligence Platform — Python Microservice
 FastAPI application that handles CSV processing, NL→SQL (via Groq),
 query execution, chart generation, statistics, and predictions.
 """
+import sys
+import io
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
 import os
 import re
 import shutil
@@ -46,8 +56,8 @@ app.add_middleware(
 )
 
 # Ensure uploads directory
-UPLOAD_DIR = Path(__file__).parent / "uploads"
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_DIR = Path(os.environ.get("APP_DATA_DIR", Path(__file__).parent)) / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
 # ─── Request Models ───
@@ -501,5 +511,12 @@ async def health():
 
 
 if __name__ == "__main__":
+    import sys
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.environ.get("PYTHON_PORT", os.environ.get("PORT", 8000)))
+    if getattr(sys, "frozen", False):
+        import multiprocessing
+        multiprocessing.freeze_support()
+        uvicorn.run(app, host="127.0.0.1", port=port)
+    else:
+        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

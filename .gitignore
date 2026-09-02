@@ -14,6 +14,10 @@ env/
 # Build output
 dist/
 build/
+dist-desktop/
+python-service/dist/
+python-service/build/
+*.spec
 *.egg-info/
 
 # IDE / Editor

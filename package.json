@@ -1,0 +1,73 @@
+{
+  "name": "insightai-desktop",
+  "version": "1.0.0",
+  "description": "InsightAI - AI-Powered Business Intelligence Platform Desktop App",
+  "main": "electron/main.cjs",
+  "author": "InsightAI",
+  "scripts": {
+    "frontend:build": "npm --prefix frontend run build",
+    "server:install": "npm --prefix server install",
+    "python:build": "python python-service/build_exe.py",
+    "electron:start": "electron .",
+    "electron:dev": "electron . --dev",
+    "dist:win": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable",
+    "build:all": "npm run frontend:build && npm run python:build && npm run dist:win"
+  },
+  "build": {
+    "appId": "com.insightai.bi",
+    "productName": "InsightAI Studio",
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "asar": false,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "files": [
+      "electron/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "python-service/dist/python-service",
+        "to": "python-service",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "server",
+        "to": "server",
+        "filter": [
+          "**/*",
+          "!uploads/**/*",
+          "!auth.db"
+        ]
+      },
+      {
+        "from": "frontend/dist",
+        "to": "frontend/dist",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "python-service/.env",
+        "to": "python-service/.env"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

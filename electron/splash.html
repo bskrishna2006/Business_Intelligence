@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>InsightAI - Starting</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+    }
+    .logo-container {
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .glow-orb {
+      position: absolute;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, rgba(168, 85, 247, 0.2) 60%, transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(20px);
+      animation: pulse 2.5s infinite ease-in-out;
+    }
+    .badge {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+    .badge svg {
+      width: 36px;
+      height: 36px;
+      fill: #ffffff;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #ffffff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+    }
+    .loader-bar {
+      width: 260px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 14px;
+    }
+    .loader-progress {
+      position: absolute;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, #6366f1, #c084fc);
+      border-radius: 9999px;
+      animation: indeterminate 1.8s infinite ease-in-out;
+    }
+    #status-text {
+      font-size: 12px;
+      color: #64748b;
+      letter-spacing: 0.2px;
+      transition: color 0.3s ease;
+    }
+    @keyframes indeterminate {
+      0% { left: -40%; width: 30%; }
+      50% { left: 30%; width: 50%; }
+      100% { left: 100%; width: 40%; }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }
+      50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <div class="glow-orb"></div>
+    <div class="badge">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2L2 7l10 5 10-5-10-5zm0 9l2.5-1.25L12 8.5l-2.5 1.25L12 11zm0 2.5L4.5 9.75 2 11l10 5 10-5-2.5-1.25L12 13.5zM2 15l10 5 10-5-2.5-1.25L12 17.5 4.5 13.75 2 15z"/>
+      </svg>
+    </div>
+  </div>
+  <h1>InsightAI Studio</h1>
+  <div class="subtitle">AI-Powered Business Intelligence</div>
+  <div class="loader-bar">
+    <div class="loader-progress"></div>
+  </div>
+  <div id="status-text">Initializing services...</div>
+
+  <script>
+    const statusEl = document.getElementById('status-text');
+    const messages = [
+      "Initializing InsightAI engine...",
+      "Starting Python AI microservice...",
+      "Connecting database & analytics...",
+      "Preparing visualization studio...",
+      "Ready!"
+    ];
+    let i = 0;
+    setInterval(() => {
+      if (i < messages.length - 1) {
+        i++;
+        statusEl.textContent = messages[i];
+      }
+    }, 1200);
+  </script>
+</body>
+</html>
