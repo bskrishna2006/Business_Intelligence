@@ -145,6 +145,29 @@ export default function App() {
     }
   };
 
+  const handleFilterTableFromGraph = async (col, val) => {
+    const query = `show records where ${col} is '${val}'`;
+    setNlFilterInput(query);
+    setActivePage('data');
+    setIsFilteringNL(true);
+    try {
+      const res = await authFetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.table_result) {
+        setNlFilterRows(data.table_result);
+        setNlFilterActive(query);
+      }
+    } catch (err) {
+      console.error('Graph filter error:', err);
+    } finally {
+      setIsFilteringNL(false);
+    }
+  };
+
   const handleNLFilterSubmit = async (e) => {
     e.preventDefault();
     if (!nlFilterInput.trim() || isFilteringNL) return;
@@ -335,7 +358,10 @@ export default function App() {
                 columns={datasetInfo.columns}
                 onExecuteQuery={(query) => {
                   setActivePage('ask');
+                  handleSendMessage(query, { question: query, mode: 'analyze' });
                 }}
+                onFilterTable={handleFilterTableFromGraph}
+                onNavigateTab={(tab) => setActivePage(tab)}
               />
             ) : (
               <EmptyPage icon="🌐" title="No dataset" desc="Upload a CSV to generate the Knowledge Graph." />
