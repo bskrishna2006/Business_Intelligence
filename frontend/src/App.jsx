@@ -11,6 +11,9 @@ import DataTable from './components/DataTable';
 import InsightsPanel from './components/InsightsPanel';
 import StatsPanel from './components/StatsPanel';
 import DataCleaningModal from './components/DataCleaningModal';
+import KnowledgeGraph from './components/KnowledgeGraph';
+import DataTransformStudio from './components/DataTransformStudio';
+import PostUploadTransformModal from './components/PostUploadTransformModal';
 import { Broom, Sparkle, MagnifyingGlass, X } from '@phosphor-icons/react';
 
 function authFetch(url, options = {}) {
@@ -121,6 +124,8 @@ export default function App() {
     setActivePage('dashboard');
   };
 
+  const [showPostUploadModal, setShowPostUploadModal] = useState(false);
+
   const handleUploadSuccess = async (data) => {
     setDatasetInfo(data);
     setMessages([{
@@ -129,7 +134,7 @@ export default function App() {
     }]);
     setResults(null);
     setCachedRecommendations(null);
-    setActivePage('dashboard');
+    setShowPostUploadModal(true);
 
     try {
       const res = await authFetch('/api/ask', {
@@ -141,6 +146,43 @@ export default function App() {
       setFullData(result.table_result || data.sample_rows);
     } catch {
       setFullData(data.sample_rows);
+    }
+  };
+
+  const handleUpdateActiveDataset = (transformedRows, transformedCols) => {
+    if (!transformedRows || transformedRows.length === 0) return;
+    setFullData(transformedRows);
+    setDatasetInfo((prev) => ({
+      ...prev,
+      columns: transformedCols,
+      row_count: transformedRows.length,
+      sample_rows: transformedRows.slice(0, 100),
+    }));
+    setCachedRecommendations(null);
+    setActivePage('dashboard');
+    alert(`Success! Updated active workspace dataset to ${transformedRows.length.toLocaleString()} rows and ${transformedCols.length} columns.`);
+  };
+
+  const handleFilterTableFromGraph = async (col, val) => {
+    const query = `show records where ${col} is '${val}'`;
+    setNlFilterInput(query);
+    setActivePage('data');
+    setIsFilteringNL(true);
+    try {
+      const res = await authFetch('/api/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: query }),
+      });
+      const data = await res.json();
+      if (res.ok && data.table_result) {
+        setNlFilterRows(data.table_result);
+        setNlFilterActive(query);
+      }
+    } catch (err) {
+      console.error('Graph filter error:', err);
+    } finally {
+      setIsFilteringNL(false);
     }
   };
 
@@ -321,6 +363,42 @@ export default function App() {
                 )
                 : <EmptyPage icon="📊" title="No dataset" desc="Upload a CSV to build visualizations." />}
             </div>
+          </div>
+        );
+
+      case 'transform':
+        return (
+          <div className="flex-1 flex flex-col min-h-0">
+            {datasetInfo ? (
+              <DataTransformStudio
+                primaryData={fullData}
+                datasetInfo={datasetInfo}
+                onUpdateActiveDataset={handleUpdateActiveDataset}
+              />
+            ) : (
+              <EmptyPage icon="🔀" title="No dataset" desc="Upload a CSV to open the Data Transformation Studio." />
+            )}
+          </div>
+        );
+
+      case 'graph':
+        return (
+          <div className="flex-1 flex flex-col min-h-0">
+            {datasetInfo ? (
+              <KnowledgeGraph
+                tableData={fullData}
+                datasetInfo={datasetInfo}
+                columns={datasetInfo.columns}
+                onExecuteQuery={(query) => {
+                  setActivePage('ask');
+                  handleSendMessage(query, { question: query, mode: 'analyze' });
+                }}
+                onFilterTable={handleFilterTableFromGraph}
+                onNavigateTab={(tab) => setActivePage(tab)}
+              />
+            ) : (
+              <EmptyPage icon="🌐" title="No dataset" desc="Upload a CSV to generate the Knowledge Graph." />
+            )}
           </div>
         );
 
@@ -514,6 +592,21 @@ export default function App() {
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {renderPage()}
       </main>
+
+      {/* Post-Upload Transformation Prompt Modal */}
+      {showPostUploadModal && (
+        <PostUploadTransformModal
+          datasetInfo={datasetInfo}
+          onTransformClick={() => {
+            setShowPostUploadModal(false);
+            setActivePage('transform');
+          }}
+          onDashboardClick={() => {
+            setShowPostUploadModal(false);
+            setActivePage('dashboard');
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -94,7 +94,15 @@ export default function AutoDashboard({
     }
   };
 
-  const renderChart = (chart) => {
+  const PALETTES = [
+    ['#6366f1', '#4f46e5', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4'],
+    ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#6366f1', '#14b8a6'],
+    ['#10b981', '#059669', '#3b82f6', '#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4'],
+    ['#f59e0b', '#d97706', '#ec4899', '#8b5cf6', '#6366f1', '#3b82f6', '#10b981', '#06b6d4'],
+    ['#ec4899', '#db2777', '#8b5cf6', '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#06b6d4'],
+  ];
+
+  const renderChart = (chart, chartIdx = 0) => {
     if (!chart.data || chart.data.length === 0) {
       return (
         <div className="w-full h-64 flex items-center justify-center text-[var(--color-text-muted)]">
@@ -102,6 +110,8 @@ export default function AutoDashboard({
         </div>
       );
     }
+
+    const palette = PALETTES[chartIdx % PALETTES.length];
 
     const tooltipStyle = {
       contentStyle: {
@@ -112,7 +122,7 @@ export default function AutoDashboard({
         fontSize: '12px',
       },
     };
-    const axisTick = { fill: 'var(--color-text-muted)', fontSize: 11 };
+    const axisTick = { fill: 'var(--color-text-muted)', fontSize: 10 };
     const formatAxisLabel = (label) => {
       if (label == null) return '';
       const text = String(label);
@@ -120,7 +130,10 @@ export default function AutoDashboard({
     };
     const formatNumber = (value) => {
       if (value == null || Number.isNaN(Number(value))) return value;
-      return Number(value).toLocaleString();
+      const num = Number(value);
+      if (Math.abs(num) >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+      if (Math.abs(num) >= 1_000) return `${(num / 1_000).toFixed(1)}k`;
+      return num.toLocaleString();
     };
     const tooltipFormatter = (value, name) => [formatNumber(value), name];
 
@@ -128,18 +141,22 @@ export default function AutoDashboard({
       case 'bar':
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+            <BarChart data={chart.data} margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel} angle={-20} textAnchor="end" height={40}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-15} fill="var(--color-text-secondary)" fontSize={11} />
               </XAxis>
               <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" fontSize={11} />
               </YAxis>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
               <Legend />
-              {chart.series && chart.series.map((seriesName, index) => (
-                <Bar key={seriesName} dataKey={seriesName} fill={COLORS[index % COLORS.length]} radius={[8, 8, 0, 0]} />
+              {chart.series && chart.series.map((seriesName, sIdx) => (
+                <Bar key={seriesName} dataKey={seriesName} radius={[6, 6, 0, 0]}>
+                  {chart.data.map((_, entryIdx) => (
+                    <Cell key={`cell-${entryIdx}`} fill={palette[(entryIdx + sIdx) % palette.length]} />
+                  ))}
+                </Bar>
               ))}
             </BarChart>
           </ResponsiveContainer>
@@ -148,18 +165,18 @@ export default function AutoDashboard({
       case 'line':
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+            <LineChart data={chart.data} margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel} angle={-20} textAnchor="end" height={40}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-15} fill="var(--color-text-secondary)" fontSize={11} />
               </XAxis>
               <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" fontSize={11} />
               </YAxis>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
               <Legend />
               {chart.series && chart.series.map((seriesName, index) => (
-                <Line key={seriesName} type="monotone" dataKey={seriesName} stroke={COLORS[index % COLORS.length]} strokeWidth={2} dot={{ r: 3 }} />
+                <Line key={seriesName} type="monotone" dataKey={seriesName} stroke={palette[index % palette.length]} strokeWidth={2.5} dot={{ r: 3, fill: palette[index % palette.length] }} />
               ))}
             </LineChart>
           </ResponsiveContainer>
@@ -168,13 +185,21 @@ export default function AutoDashboard({
       case 'area':
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <AreaChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+            <AreaChart data={chart.data} margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
+              <defs>
+                {chart.series && chart.series.map((_, sIdx) => (
+                  <linearGradient key={sIdx} id={`grad-auto-${chartIdx}-${sIdx}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={palette[sIdx % palette.length]} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={palette[sIdx % palette.length]} stopOpacity={0} />
+                  </linearGradient>
+                ))}
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel} angle={-20} textAnchor="end" height={40}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-15} fill="var(--color-text-secondary)" fontSize={11} />
               </XAxis>
               <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" fontSize={11} />
               </YAxis>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
               <Legend />
@@ -183,9 +208,9 @@ export default function AutoDashboard({
                   key={seriesName}
                   type="monotone"
                   dataKey={seriesName}
-                  stroke={COLORS[index % COLORS.length]}
-                  fill={COLORS[index % COLORS.length]}
-                  fillOpacity={0.6}
+                  stroke={palette[index % palette.length]}
+                  fill={`url(#grad-auto-${chartIdx}-${index})`}
+                  strokeWidth={2.5}
                 />
               ))}
             </AreaChart>
@@ -195,16 +220,20 @@ export default function AutoDashboard({
       case 'scatter':
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-              <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+            <ScatterChart margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey={chart.x_axis} name={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel} angle={-20} textAnchor="end" height={40}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-15} fill="var(--color-text-secondary)" fontSize={11} />
               </XAxis>
               <YAxis dataKey={chart.y_axis} name={chart.y_axis} tick={axisTick} tickFormatter={formatNumber}>
-                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                <Label value={chart.y_axis || 'Value'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" fontSize={11} />
               </YAxis>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-              <Scatter data={chart.data} fill={COLORS[0]} />
+              <Scatter data={chart.data}>
+                {chart.data.map((_, i) => (
+                  <Cell key={i} fill={palette[i % palette.length]} />
+                ))}
+              </Scatter>
             </ScatterChart>
           </ResponsiveContainer>
         );
@@ -219,11 +248,13 @@ export default function AutoDashboard({
                 nameKey={chart.x_axis}
                 cx="50%"
                 cy="50%"
-                outerRadius={80}
+                outerRadius={85}
+                innerRadius={35}
+                paddingAngle={3}
                 label={({ name, percent }) => `${formatAxisLabel(name)} ${(percent * 100).toFixed(0)}%`}
               >
                 {chart.data.map((_, index) => (
-                  <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  <Cell key={index} fill={palette[index % palette.length]} />
                 ))}
               </Pie>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
@@ -234,16 +265,20 @@ export default function AutoDashboard({
       case 'histogram':
         return (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={chart.data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,53,49,0.1)" />
-              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel}>
-                <Label value={chart.x_axis} position="insideBottom" offset={-6} fill="var(--color-text-secondary)" />
+            <BarChart data={chart.data} margin={{ top: 15, right: 20, left: 10, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+              <XAxis dataKey={chart.x_axis} tick={axisTick} tickFormatter={formatAxisLabel} angle={-20} textAnchor="end" height={40}>
+                <Label value={chart.x_axis} position="insideBottom" offset={-15} fill="var(--color-text-secondary)" fontSize={11} />
               </XAxis>
               <YAxis tick={axisTick} tickFormatter={formatNumber}>
-                <Label value={chart.y_axis || 'Count'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" />
+                <Label value={chart.y_axis || 'Count'} angle={-90} position="insideLeft" fill="var(--color-text-secondary)" fontSize={11} />
               </YAxis>
               <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
-              <Bar dataKey={chart.y_axis} fill={COLORS[0]} radius={[8, 8, 0, 0]} />
+              <Bar dataKey={chart.y_axis} radius={[6, 6, 0, 0]}>
+                {chart.data.map((_, index) => (
+                  <Cell key={`hist-${index}`} fill={palette[index % palette.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         );
@@ -428,7 +463,7 @@ export default function AutoDashboard({
                 </div>
 
                 <div className="w-full">
-                  {renderChart(chart)}
+                  {renderChart(chart, index)}
                 </div>
 
                 {chart.features && chart.features.length > 0 && (

@@ -4,16 +4,16 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
 
-// Theme-aware color palette
+// Enterprise vibrant color palette
 const COLORS = [
-  'var(--color-accent)',
-  'var(--color-accent-secondary)',
-  'var(--color-success)',
-  'var(--color-warning)',
-  '#e16a86',
-  '#f0b86b',
-  '#7b6fd6',
-  '#3d77b0'
+  '#6366f1', // Indigo
+  '#3b82f6', // Blue
+  '#10b981', // Emerald
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
+  '#8b5cf6', // Purple
+  '#06b6d4', // Cyan
+  '#14b8a6', // Teal
 ];
 
 const VISUALIZATION_ICONS = {
@@ -309,7 +309,7 @@ function RecommendationChart({ data, chartType, features }) {
     return newRow;
   });
 
-  const commonProps = { data: chartData, margin: { top: 15, right: 30, left: 10, bottom: 10 } };
+  const commonProps = { data: chartData, margin: { top: 15, right: 30, left: 10, bottom: 25 } };
   const tooltipStyle = {
     contentStyle: { 
       background: 'var(--color-bg-card)', 
@@ -320,20 +320,23 @@ function RecommendationChart({ data, chartType, features }) {
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)'
     }
   };
-  const axisTick = { fill: 'var(--color-text-muted)', fontSize: 11 };
+  const axisTick = { fill: 'var(--color-text-muted)', fontSize: 10 };
   const formatAxisLabel = (label) => {
     if (label == null) return '';
     const text = String(label);
-    return text.length > 12 ? `${text.slice(0, 12)}…` : text;
+    return text.length > 14 ? `${text.slice(0, 14)}…` : text;
   };
   const formatNumber = (value) => {
     if (value == null || Number.isNaN(Number(value))) return value;
-    return Number(value).toLocaleString();
+    const num = Number(value);
+    if (Math.abs(num) >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (Math.abs(num) >= 1_000) return `${(num / 1_000).toFixed(1)}k`;
+    return num.toLocaleString();
   };
   const tooltipFormatter = (value, name) => [formatNumber(value), name];
 
   return (
-    <ResponsiveContainer width="100%" height={320}>
+    <ResponsiveContainer width="100%" height={340}>
       {chartType === 'pie' ? (
         <PieChart>
           <Pie 
@@ -343,6 +346,8 @@ function RecommendationChart({ data, chartType, features }) {
             cx="50%" 
             cy="50%" 
             outerRadius={110}
+            innerRadius={45}
+            paddingAngle={3}
             label={({ name, percent }) => `${formatAxisLabel(name)} ${(percent * 100).toFixed(0)}%`}
             labelStyle={{ fill: 'var(--color-text-primary)', fontSize: '11px', fontWeight: 500 }}
           >
@@ -355,23 +360,26 @@ function RecommendationChart({ data, chartType, features }) {
         <AreaChart {...commonProps}>
           <defs>
             {valueKeys.map((_, i) => (
-              <linearGradient key={i} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.25} />
+              <linearGradient key={i} id={`grad-rec-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0.4} />
                 <stop offset="95%" stopColor={COLORS[i % COLORS.length]} stopOpacity={0} />
               </linearGradient>
             ))}
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(61, 53, 49, 0.06)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
           <XAxis 
             dataKey={xKey} 
             tick={axisTick}
             tickFormatter={formatAxisLabel}
-            axisLine={{ stroke: 'rgba(61, 53, 49, 0.1)' }}
+            angle={-20}
+            textAnchor="end"
+            height={45}
+            axisLine={{ stroke: 'var(--color-border)' }}
           />
           <YAxis 
             tick={axisTick}
             tickFormatter={formatNumber}
-            axisLine={{ stroke: 'rgba(61, 53, 49, 0.1)' }}
+            axisLine={{ stroke: 'var(--color-border)' }}
           />
           <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
           <Legend wrapperStyle={{ color: 'var(--color-text-primary)', paddingTop: '15px', fontWeight: 500 }} />
@@ -381,7 +389,7 @@ function RecommendationChart({ data, chartType, features }) {
               type="monotone" 
               dataKey={k} 
               stroke={COLORS[i % COLORS.length]} 
-              fill={`url(#grad-${i})`} 
+              fill={`url(#grad-rec-${i})`} 
               strokeWidth={2.5}
               isAnimationActive={true}
             />
@@ -389,17 +397,20 @@ function RecommendationChart({ data, chartType, features }) {
         </AreaChart>
       ) : (
         <BarChart {...commonProps}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(61, 53, 49, 0.06)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" vertical={false} />
           <XAxis 
             dataKey={xKey} 
             tick={axisTick}
             tickFormatter={formatAxisLabel}
-            axisLine={{ stroke: 'rgba(61, 53, 49, 0.1)' }}
+            angle={-20}
+            textAnchor="end"
+            height={45}
+            axisLine={{ stroke: 'var(--color-border)' }}
           />
           <YAxis 
             tick={axisTick}
             tickFormatter={formatNumber}
-            axisLine={{ stroke: 'rgba(61, 53, 49, 0.1)' }}
+            axisLine={{ stroke: 'var(--color-border)' }}
           />
           <Tooltip {...tooltipStyle} formatter={tooltipFormatter} />
           <Legend wrapperStyle={{ color: 'var(--color-text-primary)', paddingTop: '15px', fontWeight: 500 }} />
@@ -409,7 +420,7 @@ function RecommendationChart({ data, chartType, features }) {
               dataKey={k} 
               fill={COLORS[i % COLORS.length]} 
               radius={[6, 6, 0, 0]} 
-              maxBarSize={50}
+              maxBarSize={45}
               isAnimationActive={true}
             />
           ))}

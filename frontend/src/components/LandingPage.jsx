@@ -1,283 +1,231 @@
 import { useState } from 'react';
 import { 
-  ChatTeardropText, 
-  ChartBar, 
-  Lightning, 
-  ShieldCheck, 
   Sparkle, 
-  Timer, 
   Moon, 
   Sun,
   ArrowRight,
-  Play
+  ArrowDown,
+  Check
 } from '@phosphor-icons/react';
 
-const FEATURES = [
-    {
-        icon: ChatTeardropText,
-        title: 'Natural Language Queries',
-        desc: 'Ask questions in plain English and get instant analytical answers.',
-        badge: 'Popular'
-    },
-    {
-        icon: ChartBar,
-        title: 'Auto-Generated Charts',
-        desc: 'Beautiful visualizations generated on the fly. No manual tinkering needed.',
-    },
-    {
-        icon: Lightning,
-        title: 'Instant Execution',
-        desc: 'Lightning-fast analysis using Groq LLaMA 3.3. Results in milliseconds.',
-    },
-    {
-        icon: ShieldCheck,
-        title: 'Data Privacy First',
-        desc: 'Everything stays local and secure. No cloud storage or third-party tracking.',
-    },
-    {
-        icon: Sparkle,
-        title: 'Predictive Insights',
-        desc: 'Spot hidden trends and patterns automatically to stay ahead of your market.',
-    },
-    {
-        icon: Timer,
-        title: 'Rapid Deployment',
-        desc: 'Drop a CSV, ask a question, and get results. Setup takes under ten seconds.',
-    },
-];
-
-const STATS = [
-    { value: '10x', label: 'Faster than writing SQL' },
-    { value: '99%', label: 'Query Accuracy' },
-    { value: '< 10s', label: 'Average Setup Time' },
-];
-
 export default function LandingPage({ onGetStarted, theme, onToggleTheme }) {
-    const [hoveredFeature, setHoveredFeature] = useState(null);
-
     return (
-        <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] overflow-x-hidden relative">
-            {/* Ambient Background Glows */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-[var(--color-accent)] opacity-5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[20%] left-[-10%] w-[500px] h-[500px] bg-[var(--color-accent-secondary)] opacity-5 rounded-full blur-[140px]" />
-            </div>
-
-            {/* Navigation */}
+        <div className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] font-sans overflow-x-hidden selection:bg-[var(--color-accent)] selection:text-white">
+            
+            {/* Top Navigation */}
             <nav className="relative z-10 max-w-7xl mx-auto flex items-center justify-between px-6 py-5 border-b border-[var(--color-border)]">
-                <div className="flex items-center gap-2.5">
-                    <div className="w-8.5 h-8.5 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white shadow-md shadow-[var(--color-accent)]/15">
-                        <Sparkle size={18} weight="fill" />
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--color-accent)] flex items-center justify-center text-white font-mono font-bold text-xs shadow-md">
+                        IA
                     </div>
-                    <span className="text-md font-bold tracking-tight text-[var(--color-text-primary)]">InsightAI</span>
+                    <div>
+                        <h1 className="text-sm font-mono font-bold text-[var(--color-text-primary)] tracking-tight leading-none">INSIGHTAI</h1>
+                        <p className="text-[9px] font-mono text-[var(--color-text-muted)] tracking-wider mt-0.5">AI DATABASE ASSISTANT</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-5">
+
+                <div className="flex items-center gap-4">
+                    <span className="hidden sm:inline-block text-[10px] font-mono text-[var(--color-text-muted)] tracking-wider uppercase">
+                        SQLITE · CSV Sandbox
+                    </span>
+                    
+                    {/* Theme Switcher Toggle */}
                     <button 
                         onClick={onToggleTheme} 
-                        className="theme-toggle flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-hover)] transition-all cursor-pointer"
+                        className="theme-toggle flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-all cursor-pointer font-mono"
                     >
-                        {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
-                        <span className="font-semibold capitalize">{theme === 'dark' ? 'dark' : 'light'}</span>
+                        {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
                     </button>
+
                     <button
                         onClick={onGetStarted}
-                        className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors font-semibold cursor-pointer"
+                        className="btn-primary px-5 py-2 text-xs font-mono font-bold shadow-md cursor-pointer"
                     >
-                        Sign In
-                    </button>
-                    <button
-                        onClick={onGetStarted}
-                        className="btn-primary px-5 py-2 text-xs font-semibold shadow-md shadow-[var(--color-accent)]/10 hover:shadow-lg cursor-pointer"
-                    >
-                        Get Started
+                        GET STARTED
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24 pb-20">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <section className="relative z-10 max-w-7xl mx-auto px-6 pt-12 md:pt-20 pb-16">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
                     
-                    {/* Left Copy Panel */}
-                    <div className="lg:col-span-7 space-y-8 text-left">
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--color-border-soft)] bg-[var(--color-accent-muted)] text-[11px] text-[var(--color-accent)] font-semibold uppercase tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-pulse" />
-                            Next-Gen Data Intelligence
+                    {/* Left Column Copy */}
+                    <div className="lg:col-span-6 space-y-6 text-left">
+                        
+                        {/* Top Pill */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[var(--color-border)] bg-[var(--color-bg-card)] text-[10px] font-mono text-[var(--color-text-secondary)] uppercase tracking-wider">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent-secondary)] animate-pulse" />
+                            LOCAL-FIRST AI DATABASE ASSISTANT
                         </div>
 
-                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.1] tracking-tight text-[var(--color-text-primary)]">
-                            Talk to your data,{' '}
-                            <span className="bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-soft)] bg-clip-text text-transparent">
-                                naturally.
+                        {/* Title */}
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-mono font-bold tracking-tight text-[var(--color-text-primary)] leading-[1.15]">
+                            Talk to your{' '}
+                            <span className="text-[var(--color-accent)]">
+                                database.
                             </span>
                         </h1>
 
-                        <p className="text-base md:text-lg text-[var(--color-text-secondary)] max-w-xl leading-relaxed font-medium">
-                            Upload any CSV and ask questions in plain English. Get SQL, custom charts, and predictive insights instantly.
+                        {/* Paragraph */}
+                        <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] max-w-md leading-relaxed font-sans font-medium">
+                            Ask questions in natural language. Let AI generate SQL, review the query, and execute it against your database with confidence.
                         </p>
 
-                        <div className="flex items-center gap-4">
+                        {/* CTAs */}
+                        <div className="flex items-center gap-3 pt-2">
                             <button
                                 onClick={onGetStarted}
-                                className="btn-primary px-7 py-3 text-sm font-semibold shadow-lg shadow-[var(--color-accent)]/15 hover:shadow-xl cursor-pointer flex items-center gap-2 group"
+                                className="btn-primary px-6 py-3 text-xs font-mono font-bold cursor-pointer flex items-center gap-2"
                             >
-                                Start exploring free
-                                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                CONNECT DATABASE →
                             </button>
-                            <button
-                                onClick={onGetStarted}
-                                className="btn-secondary px-7 py-3 text-sm font-semibold cursor-pointer flex items-center gap-2"
+                            <a
+                                href="#how-it-works"
+                                className="btn-secondary px-5 py-3 text-xs font-mono font-medium cursor-pointer flex items-center gap-1.5"
                             >
-                                <Play size={14} weight="fill" />
-                                View demo
-                            </button>
+                                LEARN MORE <ArrowDown size={13} />
+                            </a>
                         </div>
-                    </div>
 
-                    {/* Right Interactive Mockup Preview */}
-                    <div className="lg:col-span-5 relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-secondary)] opacity-10 rounded-2xl blur-3xl pointer-events-none" />
-                        <div className="relative rounded-2xl border border-[var(--color-border-soft)] bg-[var(--color-bg-card)] p-5 md:p-6 shadow-xl overflow-hidden">
-                            {/* Window header */}
-                            <div className="flex items-center justify-between border-b border-[var(--color-border)] pb-3.5 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-danger)]/70" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-warning)]/70" />
-                                    <div className="w-2.5 h-2.5 rounded-full bg-[var(--color-success)]/70" />
-                                </div>
-                                <span className="text-[10px] font-mono text-[var(--color-text-muted)] font-medium">sales_q3.csv</span>
+                        {/* 3 Step Indicator Strip */}
+                        <div className="grid grid-cols-3 gap-3 pt-6">
+                            <div className="card p-3 bg-[var(--color-bg-card)] border-[var(--color-border)] text-left space-y-1">
+                                <p className="text-[9px] font-mono text-[var(--color-accent)] font-bold">01</p>
+                                <p className="text-[10px] font-mono font-bold text-[var(--color-text-primary)] uppercase">CONNECT</p>
+                                <p className="text-[9px] text-[var(--color-text-muted)] font-mono truncate">Your dataset</p>
                             </div>
-
-                            {/* Conversation Mockup */}
-                            <div className="space-y-4">
-                                <div className="flex justify-end">
-                                    <div className="bg-[var(--color-accent)] text-white text-xs py-2 px-3.5 rounded-2xl rounded-tr-sm shadow-sm font-medium">
-                                        "Show sales trend by region"
-                                    </div>
-                                </div>
-                                <div className="flex justify-start">
-                                    <div className="border border-[var(--color-border-soft)] bg-[var(--color-bg-secondary)] text-[var(--color-text-primary)] text-xs py-2.5 px-3.5 rounded-2xl rounded-tl-sm shadow-sm space-y-3 max-w-[90%]">
-                                        <p className="font-semibold text-[var(--color-text-secondary)]">Analyzing regional sales dataset...</p>
-                                        
-                                        {/* Micro chart preview */}
-                                        <div className="flex items-end gap-1.5 h-18 pt-2">
-                                            {[40, 70, 55, 90, 60].map((h, i) => (
-                                                <div key={i} className="flex-1 rounded-t-sm bg-[var(--color-accent)] opacity-90 transition-all hover:opacity-100" style={{ height: `${h}%` }} />
-                                            ))}
-                                        </div>
-                                        <div className="flex justify-between text-[9px] text-[var(--color-text-muted)] font-mono">
-                                            <span>North</span>
-                                            <span>East</span>
-                                            <span>South</span>
-                                            <span>West</span>
-                                            <span>Central</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div className="card p-3 bg-[var(--color-bg-card)] border-[var(--color-border)] text-left space-y-1">
+                                <p className="text-[9px] font-mono text-[var(--color-accent)] font-bold">02</p>
+                                <p className="text-[10px] font-mono font-bold text-[var(--color-text-primary)] uppercase">ASK</p>
+                                <p className="text-[9px] text-[var(--color-text-muted)] font-mono truncate">Natural language</p>
+                            </div>
+                            <div className="card p-3 bg-[var(--color-bg-card)] border-[var(--color-border)] text-left space-y-1">
+                                <p className="text-[9px] font-mono text-[var(--color-accent)] font-bold">03</p>
+                                <p className="text-[10px] font-mono font-bold text-[var(--color-text-primary)] uppercase">EXECUTE</p>
+                                <p className="text-[9px] text-[var(--color-text-muted)] font-mono truncate">Real results</p>
                             </div>
                         </div>
+
                     </div>
-                </div>
-            </section>
 
-            {/* Statistics Section */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 py-12 border-t border-b border-[var(--color-border-soft)] bg-[var(--color-bg-secondary)]/30">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {STATS.map((s, idx) => (
-                        <div key={idx} className="text-center md:text-left space-y-1.5 md:pl-8 md:border-l border-[var(--color-border)] first:border-0 first:pl-0">
-                            <p className="text-3xl font-extrabold text-[var(--color-accent)] leading-none">
-                                {s.value}
-                            </p>
-                            <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider">{s.label}</p>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* Features Section */}
-            <section className="relative z-10 max-w-7xl mx-auto px-6 py-24">
-                <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-                    <h2 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">
-                        Unlock powerful analytical capabilities
-                    </h2>
-                    <p className="text-[var(--color-text-secondary)] text-sm font-medium">
-                        No complex schemas or SQL wizardry required. Talk to your database dynamically.
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {FEATURES.map((f, i) => {
-                        const Icon = f.icon;
-                        const isHovered = hoveredFeature === i;
-                        return (
-                            <div
-                                key={i}
-                                onMouseEnter={() => setHoveredFeature(i)}
-                                onMouseLeave={() => setHoveredFeature(null)}
-                                className={`card p-6 flex flex-col items-start text-left relative overflow-hidden transition-all duration-300 ${
-                                    isHovered 
-                                        ? 'border-[var(--color-accent)] shadow-lg bg-[var(--color-bg-elevated)] -translate-y-0.5' 
-                                        : 'bg-[var(--color-bg-card)]'
-                                }`}
-                            >
-                                <div className={`p-3 rounded-lg mb-5 transition-colors ${
-                                    isHovered 
-                                        ? 'bg-[var(--color-accent)] text-white' 
-                                        : 'bg-[var(--color-accent-muted)] text-[var(--color-accent)]'
-                                }`}>
-                                    <Icon size={20} weight={isHovered ? "fill" : "regular"} />
+                    {/* Right Column macOS Workspace Window Mockup */}
+                    <div className="lg:col-span-6 relative">
+                        <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-code)] p-5 shadow-2xl space-y-4 text-left">
+                            
+                            {/* Window Topbar */}
+                            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
                                 </div>
-                                <h3 className="text-sm font-bold text-[var(--color-text-primary)] mb-2">
-                                    {f.title}
-                                </h3>
-                                <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed font-medium">
-                                    {f.desc}
-                                </p>
-                                {f.badge && (
-                                    <span className="absolute top-4 right-4 bg-[var(--color-accent-secondary-soft)] text-[var(--color-accent-secondary)] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                                        {f.badge}
+                                <span className="text-[10px] font-mono text-zinc-400">insightai.workspace</span>
+                            </div>
+
+                            {/* Natural Language Box */}
+                            <div className="space-y-1.5">
+                                <p className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">NATURAL LANGUAGE</p>
+                                <div className="p-3.5 rounded-lg bg-white/5 border border-white/10 font-mono text-xs text-white font-semibold">
+                                    Show the 5 highest paid employees
+                                </div>
+                            </div>
+
+                            {/* Generated SQL Container */}
+                            <div className="space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider">GENERATED SQL</p>
+                                    <span className="text-[9px] font-mono text-emerald-400 border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                        VALID SQL
                                     </span>
-                                )}
+                                </div>
+                                <div className="p-4 rounded-lg bg-black/60 border border-white/10 font-mono text-xs leading-relaxed">
+                                    <p><span className="text-[var(--color-accent)] font-bold">SELECT</span> name, salary</p>
+                                    <p><span className="text-[var(--color-accent)] font-bold">FROM</span> employees</p>
+                                    <p><span className="text-[var(--color-accent)] font-bold">ORDER BY</span> salary <span className="text-[var(--color-accent)] font-bold">DESC</span></p>
+                                    <p><span className="text-[var(--color-accent)] font-bold">LIMIT</span> <span className="text-emerald-400">5</span>;</p>
+                                </div>
                             </div>
-                        );
-                    })}
+
+                            {/* Card Footer Note & Action Button */}
+                            <div className="pt-2 flex items-center justify-between">
+                                <p className="text-[9px] font-mono text-zinc-400">AI generated · Ready to execute</p>
+                                <button
+                                    onClick={onGetStarted}
+                                    className="btn-primary px-4 py-2 text-xs font-mono font-bold cursor-pointer"
+                                >
+                                    Try InsightAI
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="relative z-10 max-w-4xl mx-auto px-6 pb-24 text-center">
-                <div className="card p-10 md:p-12 border-[var(--color-border-soft)] bg-gradient-to-br from-[var(--color-bg-card)] to-[var(--color-bg-secondary)]/50 shadow-xl space-y-6">
-                    <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-[var(--color-text-primary)]">
-                        Ready to talk to your data?
-                    </h2>
-                    <p className="text-[var(--color-text-secondary)] text-sm max-w-md mx-auto font-medium">
-                        Get started with free data uploads. Unlock the Pro tier later for team sharing.
+            {/* How It Works Section */}
+            <section id="how-it-works" className="relative z-10 max-w-7xl mx-auto px-6 py-16 border-t border-[var(--color-border)] text-center space-y-12">
+                <div>
+                    <p className="text-[9px] font-mono text-[var(--color-accent)] uppercase tracking-widest mb-2 font-bold">
+                        HOW INSIGHTAI WORKS
                     </p>
-                    <button
-                        onClick={onGetStarted}
-                        className="btn-primary px-8 py-3.5 text-sm font-semibold shadow-lg shadow-[var(--color-accent)]/15 hover:shadow-xl cursor-pointer"
-                    >
-                        Get Started Free
-                    </button>
+                    <h2 className="text-2xl sm:text-3xl font-mono font-bold text-[var(--color-text-primary)]">
+                        From question to SQL
+                    </h2>
+                    <p className="text-xs text-[var(--color-text-secondary)] font-medium max-w-md mx-auto mt-2">
+                        Connect your dataset, ask questions in natural language, review the generated SQL, and execute it.
+                    </p>
+                </div>
+
+                {/* 3 Large Step Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+                    <div className="card p-6 bg-[var(--color-bg-card)] border-[var(--color-border)] space-y-3">
+                        <span className="text-xs font-mono text-[var(--color-accent)] font-bold">01</span>
+                        <h3 className="text-sm font-mono font-bold text-[var(--color-text-primary)] uppercase">CONNECT</h3>
+                        <p className="text-xs text-[var(--color-text-secondary)] font-sans">
+                            Upload your CSV or SQLite database file to initialize the in-memory sandbox.
+                        </p>
+                    </div>
+
+                    <div className="card p-6 bg-[var(--color-bg-card)] border-[var(--color-accent)]/40 shadow-sm space-y-3 relative">
+                        <span className="text-xs font-mono text-[var(--color-accent)] font-bold">02</span>
+                        <h3 className="text-sm font-mono font-bold text-[var(--color-text-primary)] uppercase">ASK</h3>
+                        <p className="text-xs text-[var(--color-text-secondary)] font-sans">
+                            Describe what you need in plain English. Groq AI compiles optimized SQL.
+                        </p>
+                    </div>
+
+                    <div className="card p-6 bg-[var(--color-bg-card)] border-[var(--color-border)] space-y-3">
+                        <span className="text-xs font-mono text-[var(--color-accent)] font-bold">03</span>
+                        <h3 className="text-sm font-mono font-bold text-[var(--color-text-primary)] uppercase">REVIEW & EXECUTE</h3>
+                        <p className="text-xs text-[var(--color-text-secondary)] font-sans">
+                            Review the generated SQL and execute it against your database with 100% confidence.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Safety Guarantee Box */}
+                <div className="card p-5 bg-[var(--color-bg-card)] border-[var(--color-border)] flex items-start gap-4 text-left max-w-3xl mx-auto">
+                    <div className="p-2 rounded-md bg-[var(--color-accent-muted)] text-[var(--color-accent)] shrink-0">
+                        <Check size={18} weight="bold" />
+                    </div>
+                    <div>
+                        <h4 className="text-xs font-mono font-bold text-[var(--color-text-primary)] uppercase mb-1">
+                            REVIEW BEFORE EXECUTION
+                        </h4>
+                        <p className="text-xs text-[var(--color-text-secondary)] font-sans">
+                            Generated SQL is shown before execution. Destructive operations require explicit confirmation before changing database data.
+                        </p>
+                    </div>
                 </div>
             </section>
 
             {/* Footer */}
-            <footer className="relative z-10 border-t border-[var(--color-border)] py-8 px-6 bg-[var(--color-bg-secondary)]/40">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                    <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-md bg-[var(--color-accent)] flex items-center justify-center text-white">
-                            <Sparkle size={14} weight="fill" />
-                        </div>
-                        <span className="text-xs font-semibold text-[var(--color-text-secondary)]">
-                            InsightAI · Naturally Understood
-                        </span>
-                    </div>
-                    <p className="text-[10px] text-[var(--color-text-muted)] font-medium">
-                        Built with care · Powered by Groq AI
-                    </p>
-                </div>
+            <footer className="border-t border-[var(--color-border)] py-8 text-center text-xs font-mono text-[var(--color-text-muted)]">
+                <p>© 2026 InsightAI. Local-first AI Database Assistant.</p>
             </footer>
+
         </div>
     );
 }
