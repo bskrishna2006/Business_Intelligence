@@ -181,11 +181,17 @@ function startPythonService() {
   pythonProcess.stdout?.on('data', (d) => {
     const line = d.toString().trim();
     serviceLogs.python.push(line);
+    if (serviceLogs.python.length > 500) {
+      serviceLogs.python.splice(0, serviceLogs.python.length - 500);
+    }
     log(`[Python] ${line}`);
   });
   pythonProcess.stderr?.on('data', (d) => {
     const line = d.toString().trim();
     serviceLogs.python.push(line);
+    if (serviceLogs.python.length > 500) {
+      serviceLogs.python.splice(0, serviceLogs.python.length - 500);
+    }
     log(`[Python Err] ${line}`);
   });
   pythonProcess.on('exit', (code) => {
@@ -202,33 +208,31 @@ function startExpressServer() {
     PYTHON_SERVICE_URL: `http://127.0.0.1:${PYTHON_PORT}`,
     APP_DATA_DIR: userDataPath,
     FRONTEND_DIST: frontendDistPath,
+    ELECTRON_RUN_AS_NODE: '1',
   };
 
-  log(`Spawning Express server: ${expressScript}`);
+  log(`Spawning Express server via Electron Node runtime: ${expressScript}`);
 
-  try {
-    expressProcess = spawn('node', [expressScript], {
-      cwd: serverDir,
-      env: srvEnv,
-      windowsHide: true,
-    });
-  } catch (e) {
-    log(`Failed to spawn system node: ${e.message}. Trying Electron as Node...`);
-    expressProcess = spawn(process.execPath, [expressScript], {
-      cwd: serverDir,
-      env: { ...srvEnv, ELECTRON_RUN_AS_NODE: '1' },
-      windowsHide: true,
-    });
-  }
+  expressProcess = spawn(process.execPath, [expressScript], {
+    cwd: serverDir,
+    env: srvEnv,
+    windowsHide: true,
+  });
 
   expressProcess.stdout?.on('data', (d) => {
     const line = d.toString().trim();
     serviceLogs.express.push(line);
+    if (serviceLogs.express.length > 500) {
+      serviceLogs.express.splice(0, serviceLogs.express.length - 500);
+    }
     log(`[Express] ${line}`);
   });
   expressProcess.stderr?.on('data', (d) => {
     const line = d.toString().trim();
     serviceLogs.express.push(line);
+    if (serviceLogs.express.length > 500) {
+      serviceLogs.express.splice(0, serviceLogs.express.length - 500);
+    }
     log(`[Express Err] ${line}`);
   });
   expressProcess.on('exit', (code) => {

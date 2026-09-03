@@ -7,7 +7,6 @@ import path from 'path';
 import fs from 'fs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,17 +23,26 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
-// ─── Auth DB Setup ───
-const authDb = new Database(path.join(dataDir, 'auth.db'));
-authDb.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  )
-`);
+// ─── User Store (Pure JS JSON Database - No Native C++ Mismatch) ───
+const usersFile = path.join(dataDir, 'users.json');
+function loadUsers() {
+  if (!fs.existsSync(usersFile)) {
+    return [];
+  }
+  try {
+    return JSON.parse(fs.readFileSync(usersFile, 'utf-8'));
+  } catch {
+    return [];
+  }
+}
+
+function saveUsers(users) {
+  try {
+    fs.writeFileSync(usersFile, JSON.stringify(users, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to save users:', err);
+  }
+}
 
 // ─── Middleware ───
 app.use(cors());
@@ -73,17 +81,24 @@ app.post('/api/auth/signup', async (req, res) => {
   }
 
   try {
-    const existing = authDb.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const users = loadUsers();
+    const existing = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (existing) {
       return res.status(409).json({ error: 'An account with this email already exists.' });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const result = authDb.prepare(
-      'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)'
-    ).run(name, email, password_hash);
+    const newUser = {
+      id: Date.now(),
+      name,
+      email,
+      password_hash,
+      created_at: new Date().toISOString()
+    };
+    users.push(newUser);
+    saveUsers(users);
 
-    const user = { id: result.lastInsertRowid, name, email };
+    const user = { id: newUser.id, name: newUser.name, email: newUser.email };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '7d' });
 
     console.log(`✅ New user registered: ${email}`);
@@ -103,7 +118,8 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    const row = authDb.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const users = loadUsers();
+    const row = users.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!row) {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }

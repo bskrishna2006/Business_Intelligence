@@ -511,7 +511,6 @@ async def health():
 
 
 if __name__ == "__main__":
-    import sys
     import uvicorn
     port = int(os.environ.get("PYTHON_PORT", os.environ.get("PORT", 8000)))
     if getattr(sys, "frozen", False):

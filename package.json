@@ -12,7 +12,7 @@
     "electron:dev": "electron . --dev",
     "dist:win": "electron-builder --win",
     "dist:portable": "electron-builder --win portable",
-    "build:all": "npm run frontend:build && npm run python:build && npm run dist:win"
+    "build:all": "npm run server:install && npm run frontend:build && npm run python:build && npm run dist:win"
   },
   "build": {
     "appId": "com.insightai.bi",
@@ -59,10 +59,6 @@
         "filter": [
           "**/*"
         ]
-      },
-      {
-        "from": "python-service/.env",
-        "to": "python-service/.env"
       }
     ]
   },
